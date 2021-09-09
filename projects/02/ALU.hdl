@@ -42,5 +42,29 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+        // Zero and negate x based on zx and nx inputs -> output to outx
+        Mux16(a=x, sel=zx, out=outx1);
+        Not16(in=outx1, out=outx2);
+        Mux16(a=outx1, b=outx2, sel=nx, out=outx);
+
+        // Zero and negate y based on zy and ny inputs -> output to outy
+        Mux16(a=y, sel=zy, out=outy1);
+        Not16(in=outy1, out=outy2);
+        Mux16(a=outy1, b=outy2, sel=ny, out=outy);
+
+
+        // Apply both possibilities for f, and select based on the input f bit -> output to outf
+        And16(a=outx, b=outy, out=outxpy);
+        Add16(a=outx, b=outy, out=outxay);
+        Mux16(a=outxpy, b=outxay, sel=f, out=outf);
+
+        // Negate the output if needed, send output to output, two 8 bit gates, and the sign bit to ng
+        Not16(in=outf, out=outnf);
+        Mux16(a=outf, b=outnf, sel=no, out=out, out[15]=ng, out[0..7]=o8, out[8..15]=o16);
+        
+        // Check the two 8 bit gates to see if anything in the output is 0
+        Or8Way(in=o8, out=out1);
+        Or8Way(in=o16, out=out2);
+        Or(a=out1,b=out2,out=nzr);
+        Not(in=nzr,out=zr);
 }

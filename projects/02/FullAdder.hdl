@@ -13,5 +13,9 @@ CHIP FullAdder {
         carry;   // Left bit of a + b + c
 
     PARTS:
-    // Put you code here:
+    // We add the carry bit with a half adder
+    HalfAdder(a=a, b=b, sum=ab, carry=c1);
+    HalfAdder(a=ab, b=c, sum=sum, carry=c2);
+    // If either one of the carry bits are true, the output is true (but both cannot be true)
+    Or(a=c1, b=c2, out=carry);
 }
