@@ -18,7 +18,7 @@ CHIP Mux8Way16 {
     OUT out[16];
 
     PARTS:
-    Mux4Way16(a=a,b=b,c=c,d=d,sel=sel[0..1],out=part1);
-    Mux4Way16(a=e,b=f,c=g,d=h,sel=sel[0..1],out=part2);
-    Mux16(a=part1,b=part2,sel=sel[2],out=out);
+    Mux4Way16(a=a,b=b,c=c,d=d,sel=sel[0..1],out=abcd); // We choose between a,b,c,d with the two LSB
+    Mux4Way16(a=e,b=f,c=g,d=h,sel=sel[0..1],out=efgh); // We choose between e,f,g,h with the two LSB
+    Mux16(a=abcd,b=efgh,sel=sel[2],out=out); // We choose between the selected abcd and the selected efgh with the MSB
 }

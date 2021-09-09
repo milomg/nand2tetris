@@ -16,7 +16,8 @@ CHIP DMux8Way {
     OUT a, b, c, d, e, f, g, h;
 
     PARTS:
-    DMux(in=in, sel=sel[2], a=out1, b=out2);
-    DMux4Way(in=out1, sel=sel[0..1], a=a, b=b, c=c, d=d);
-    DMux4Way(in=out2, sel=sel[0..1], a=e, b=f, c=g, d=h);
+    // We split into (a,b,c,d) and (e,f,g,h) then use dmux4 to split these into the outputs
+    DMux(in=in, sel=sel[2], a=abcd, b=efgh);
+    DMux4Way(in=abcd, sel=sel[0..1], a=a, b=b, c=c, d=d);
+    DMux4Way(in=efgh, sel=sel[0..1], a=e, b=f, c=g, d=h);
 }

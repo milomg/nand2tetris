@@ -13,6 +13,7 @@ CHIP Xor {
     OUT out;
 
     PARTS:
+    // Xor is true when a OR b is true and a AND b is false
     Or(a=a,b=b,out=orab);
     Nand(a=a,b=b,out=nandab);
     And(a=nandab,b=orab,out=out);

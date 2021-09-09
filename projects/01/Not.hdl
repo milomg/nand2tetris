@@ -13,5 +13,6 @@ CHIP Not {
     OUT out;
 
     PARTS:
+    // Not is just nand with the same bit as and b
     Nand(a=in,b=in,out=out);
 }
