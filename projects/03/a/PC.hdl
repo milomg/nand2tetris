@@ -16,5 +16,10 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    // We run the if statements backwards so that higher things have higher priority (zero overrides load)
+    Inc16(in=reg, out=inc1);
+    Mux16(a=reg, b=inc1, sel=inc, out=inced);
+    Mux16(a=inced, b=in, sel=load, out=loaded);
+    Mux16(a=loaded, sel=reset, out=zeroed);
+    Register(in=zeroed, load=true, out=reg, out=out); // We use a register here to avoid writing DFF16
 }

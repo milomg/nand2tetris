@@ -14,5 +14,8 @@ CHIP Bit {
     OUT out;
 
     PARTS:
-    // Put your code here:
+    // This is the current value by multiplexing between the old value from the DFF and the new in value
+    Mux(a=mux, b=in, sel=load, out=wip);
+    // Store the old value, and pass that old value to the output
+    DFF(in=wip, out=mux, out=out);
 }
