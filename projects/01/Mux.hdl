@@ -14,7 +14,7 @@ CHIP Mux {
     OUT out;
 
     PARTS:
-    // We AND each of a and b with the selector to so that only one of them is not 0, then or them together
+    // We AND each of a and b with the selector to so that only one of them is not 0, then OR them together
     Not(in=sel,out=notsel);
     And(a=a,b=notsel,out=acheck);
     And(a=b,b=sel,out=bcheck);

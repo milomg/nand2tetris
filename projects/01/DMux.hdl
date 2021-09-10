@@ -14,7 +14,7 @@ CHIP DMux {
     OUT a, b;
 
     PARTS:
-    // And each bit to make sure we send 0 when that output is not selected
+    // And each bit with sel and not sel to make sure we send 0 when the output is not selected
     Not(in=sel,out=notsel);
     And(a=in,b=notsel,out=a);
     And(a=in,b=sel,out=b);
