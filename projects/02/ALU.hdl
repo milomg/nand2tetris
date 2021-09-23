@@ -52,7 +52,6 @@ CHIP ALU {
         Not16(in=outy1, out=outy2);
         Mux16(a=outy1, b=outy2, sel=ny, out=outy);
 
-
         // Apply both possibilities for f, and select based on the input f bit -> output to outf
         And16(a=outx, b=outy, out=outxpy);
         Add16(a=outx, b=outy, out=outxay);
