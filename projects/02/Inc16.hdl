@@ -13,6 +13,6 @@ CHIP Inc16 {
     OUT out[16];
 
     PARTS:
-    // We add a single lsb bit
+    // We add a single bit in the least significant position
     Add16(a=in, b[0]=true, out=out);
 }

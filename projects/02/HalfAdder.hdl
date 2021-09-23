@@ -13,6 +13,6 @@ CHIP HalfAdder {
         carry;  // Left bit of a + b
 
     PARTS:
-    Xor(a=a, b=b, out=sum);
-    And(a=a, b=b, out=carry);
+    Xor(a=a, b=b, out=sum); // The LSB is 0 only when a and b are not both 1 (then the output is 10 so lsb is 0)
+    And(a=a, b=b, out=carry); // The carry is 1 only when a and b are both 1 (then the output is 10 so msb is 1)
 }

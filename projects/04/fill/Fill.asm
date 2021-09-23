@@ -51,8 +51,7 @@
     A=M
     M=D
     @R1
-    M=M+1
-    D=M
+    MD=M+1
     @KBD
     D=D-A
     @LOOP

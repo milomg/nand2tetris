@@ -1,3 +1,9 @@
 tools/
 .DS_Store
 *.out
+mighdoll**/
+mighdoll**.zip
+node_modules/
+target/
+pnpm-lock.yaml
+projects/06/**/*.hack

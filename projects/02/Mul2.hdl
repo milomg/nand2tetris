@@ -1,0 +1,27 @@
+// File name: projects/02/Mul2.hdl
+
+/**
+ * 2-bit multiplier:
+ * out = a * b
+
+ *           a   b 
+ *         * c   d
+ * ----------------------
+ *          ad  db 
+ *   +  ac  cb 
+ * ----------------------
+ */
+
+CHIP Mul2 {
+    IN a[2], b[2];
+    OUT out[4];
+
+    PARTS:
+    And(a=a[0],b=b[0],out=db);
+    And(a=a[1],b=b[0],out=ad);
+
+    And(a=a[0],b=b[1],out=cb);
+    And(a=a[1],b=b[1],out=ac);
+
+    Add16(a[0]=db, a[1]=ad, b[1]=cb, b[2]=ac, out[0..3]=out); // we use add 16 because we have a circuit for that
+}

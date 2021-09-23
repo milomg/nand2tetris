@@ -1,0 +1,37 @@
+// File name: projects/02/Mul4.hdl
+// Designed by Milo
+
+/**
+ * 4-bit multiplier:
+ * out = a * b
+
+ *           a   b 
+ *         * c   d
+ * ----------------------
+ *          ad  db 
+ *    + ac  cb 
+ * ----------------------
+ *      ac      db (these can be merged because they don't overlap)
+ *          ad
+ *   +      cb 
+ * ----------------------
+ 
+ */
+
+CHIP Mul4 {
+    IN a[4], b[4];
+    OUT out[8];
+
+    PARTS:
+    // We multiply in groups of 2 because we have a 2 bit multiply, this is the lower half of b
+    Mul2(a=a[0..1],b=b[0..1],out=db);
+    Mul2(a=a[2..3],b=b[0..1],out=ad);
+
+    // Multiply the upper half of b
+    Mul2(a=a[0..1],b=b[2..3],out=cb);
+    Mul2(a=a[2..3],b=b[2..3],out=ac);
+
+    // We do this with only 2 adds because [0..3] and [4..7] don't overlap
+    Add16(a[0..3]=db, a[4..7]=ac, b[2..5]=ad, out=out1);
+    Add16(a=out1, b[2..5]=cb, out[0..7]=out);
+}
