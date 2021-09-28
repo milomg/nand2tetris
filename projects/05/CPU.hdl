@@ -62,6 +62,5 @@ CHIP CPU {
     Or(a=o1,b=o2,out=o4);
     Or(a=o3,b=o4,out=j);
     And(a=instruction[15], b=j, out=jump);
-    Not(in=jump,out=njump);
     PC(in=rega, load=jump, inc=true, reset=reset, out[0..14]=pc);
 }

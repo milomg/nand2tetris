@@ -1,0 +1,16 @@
+CHIP Wire10 {
+    IN in[10];
+    OUT out[10];
+
+    PARTS:
+    Wire(in=in[0], out=out[0]);
+    Wire(in=in[1], out=out[1]);
+    Wire(in=in[2], out=out[2]);
+    Wire(in=in[3], out=out[3]);
+    Wire(in=in[4], out=out[4]);
+    Wire(in=in[5], out=out[5]);
+    Wire(in=in[6], out=out[6]);
+    Wire(in=in[7], out=out[7]);
+    Wire(in=in[8], out=out[8]);
+    Wire(in=in[9], out=out[9]);
+}

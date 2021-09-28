@@ -1,0 +1,11 @@
+// Note that fraction is 11 bits instead of 10 so that we can set the first bit to 1
+CHIP UnpackFloat {
+    IN in[16];
+    OUT sign,exp[5], fraction[11];
+
+    PARTS:
+    Wire(out=sign, in=in[15]);
+    Wire10(in[0..4]=in[10..14], out[0..4]=exp, out[0..7]=or8); // reuse wire10 here even though we could use wire5
+    Or8Way(in=or8, out=fraction[10]);
+    Wire10(in=in[0..9],out=fraction[0..9]);
+}

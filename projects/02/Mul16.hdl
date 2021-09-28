@@ -1,0 +1,35 @@
+
+/**
+ * 4-bit multiplier:
+ * out = a * b
+
+ *           a   b 
+ *         * c   d
+ * ----------------------
+ *          ad  db 
+ *    + ac  cb 
+ * ----------------------
+ *      ac      db (these can be merged because they don't overlap)
+ *          ad
+ *   +      cb 
+ * ----------------------
+ 
+ */
+
+CHIP Mul16 {
+    IN a[16], b[16];
+    OUT out[32];
+
+    PARTS:
+    // We multiply in groups of 2 because we have a 4 bit multiply, this is the lower half of b
+    Mul8(a=a[0..7],b=b[0..7],out=db);
+    Mul8(a=a[8..15],b=b[0..7],out=ad);
+
+    // Multiply the upper half of b
+    Mul8(a=a[0..7],b=b[8..15],out=cb);
+    Mul8(a=a[8..15],b=b[8..15],out=ac);
+
+    // We do this with only 2 adds because [0..15] and [16..31] don't overlap
+    Add32(a[0..15]=db, a[16..31]=ac, b[8..15]=ad, out=out1);
+    Add32(a=out1, b[8..15]=cb, out=out);
+}

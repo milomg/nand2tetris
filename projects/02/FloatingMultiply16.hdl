@@ -1,0 +1,34 @@
+CHIP FloatingMultiply16 {
+    IN a[16], b[16];
+    OUT out[16];
+
+    PARTS:
+    UnpackFloat(in=a, sign=signa, exp=expa, fraction=fraca);
+    UnpackFloat(in=b, sign=signb, exp=expb, fraction=fracb);
+    Xor(a=signa, b=signb, out=out[15]);
+
+    Add16(a[0..4]=expa, b[0..4]=expb, out=shifted);
+
+    // We auto-generate this because it is gross and there is no other way to put in a constant afaik
+    // "01111".padStart(16,"0").replaceAll("1","2").replaceAll("0","1").replaceAll("2","0").replace(/0$/,"1").split("").map((x,i)=>`b[${i}]=${!!(+x)}`).join(",\n")
+    Add16(a=shifted, 
+        b[0]=true,
+        b[1]=true,
+        b[2]=true,
+        b[3]=true,
+        b[4]=true,
+        b[5]=true,
+        b[6]=true,
+        b[7]=true,
+        b[8]=true,
+        b[9]=true,
+        b[10]=true,
+        b[11]=true,
+        b[12]=false,
+        b[13]=false,
+        b[14]=false,
+        b[15]=true,
+        out[0..4]=out[10..14]);
+
+    Mul16(a=fraca, b=fracb, out[10..21]=out[0..9]);
+}
