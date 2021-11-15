@@ -1,0 +1,31 @@
+// File name: projects/02/CLA4.hdl
+
+/**
+ * Adds two 16-bit values.
+ * The most significant carry bit is ignored.
+ */
+
+CHIP CLA {
+    IN a[4], b[4], c;
+    OUT out[4];
+
+    PARTS:
+    And(a=a[0], b=b[0], out=g0);
+    And(a=a[1], b=b[1], out=g1);
+    And(a=a[2], b=b[2], out=g2);
+    And(a=a[3], b=b[3], out=g3);
+
+    Xor(a=a[0], b=b[0], out=p0);
+    Xor(a=a[1], b=b[1], out=p1);
+    Xor(a=a[2], b=b[2], out=p2);
+    Xor(a=a[3], b=b[3], out=p3);
+
+
+    Xor(a=p0, b=c, out=out[0]);
+
+
+    And(a=p0, b=c0, out=p0c0);
+    Or(a=g0, b=p0c0, out=c1);
+    Xor(a=p1, b=c1, out=out[1]);
+
+}

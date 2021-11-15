@@ -39,28 +39,32 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    Not(in=instruction[15],out=seta);
-    Or(a=seta, b=instruction[5], out=reala);
-    
-    And(a=instruction[3], b=instruction[15], out=writeM);
+    Mux16(a=aluout, b=instruction, sel=seta, out=ain);   // Decide whether to pass ALU output or the instruction contents to A
 
-    Mux16(a=aluout, b=instruction, sel=seta, out=ain);
-    ARegister(in=ain, load=reala, out=rega, out[0..14]=addressM, out[0..14]=regaa);
+    Not(in=instruction[15],out=seta);                    // We write the instruction to A if the first bit says we are in an A-instruction
+    Or(a=seta, b=instruction[5], out=reala);             // We also write the instruction to A if we are in a C-instruction and the fifth bit is 1
+    ARegister(in=ain, load=reala, out=rega, out[0..14]=addressM); // Pass the output of the A register to the address and to a temporary wire (that may get passed into the ALU)
 
-    And(a=instruction[4], b=instruction[15], out=writed);
+    Mux16(a=rega, b=inM, sel=instruction[12], out=alux); // We pass either the A register or memory based on the "a" bit in ixxaccccccdddjjj
+
+    And(a=instruction[4], b=instruction[15], out=writed);// We only write to D if we are in a C-instruction and the fifth bit (D destination bit) is 1
     DRegister(in=aluout, load=writed, out=regd);
-    
-    Mux16(a=rega, b=inM, sel=instruction[12], out=alux);
+
+    // Pass our flags to the ALU (as well as the A,M,D registers)
     ALU(x=regd, y=alux, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=aluout, out=outM, zr=aluzr, ng=alung);
     
-    And(a=alung, b=instruction[2], out=o1);
-    And(a=aluzr, b=instruction[1], out=o2);
+    And(a=alung, b=instruction[2], out=shouldjump1);  // Do we want to jump when negative and the ALU result is negative?
+    And(a=aluzr, b=instruction[1], out=shouldjump2);  // Do we want to jump when zero and the ALU result is zero?
     
     Or(a=alung,b=aluzr,out=alungzr);
     Not(in=alungzr,out=alups);
-    And(a=alups, b=instruction[0], out=o3);
-    Or(a=o1,b=o2,out=o4);
-    Or(a=o3,b=o4,out=j);
-    And(a=instruction[15], b=j, out=jump);
+    And(a=alups, b=instruction[0], out=shouldjump3);  // Do we want to jump when positive and the ALU result is positive, i.e. not (negative OR zero)?
+
+    Or(a=shouldjump1,b=shouldjump2,out=o4);
+    Or(a=shouldjump3,b=o4,out=probablyjump);          // Three way or to decide whether to jump
+
+    And(a=instruction[15], b=probablyjump, out=jump); // Don't jump if we are in an A-instruction
     PC(in=rega, load=jump, inc=true, reset=reset, out[0..14]=pc);
+
+    And(a=instruction[3], b=instruction[15], out=writeM); // Write to M if we are in a C-instruction and the fourth bit (M destination bit) is 1
 }

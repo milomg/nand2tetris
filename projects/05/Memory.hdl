@@ -27,11 +27,11 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    DMux(in=load, sel=address[14], a=rama, b=ramb);
+    DMux(in=load, sel=address[14], a=rama, b=ramb);                  // We write to RAM or SCREEN based on address[14]
     RAM16K(in=in, load=rama, address=address[0..13], out=outa);
     Screen(in=in, load=ramb, address=address[0..12], out=screenout);
     Keyboard(out=keyout);
-    Mux16(a=outa, b=screenout, sel=address[14],out=out1);
-    And(a=address[14],b=address[13],out=key);
+    Mux16(a=outa, b=screenout, sel=address[14],out=out1);            // We read from RAM or SCREEN based on address[14]
+    And(a=address[14], b=address[13], out=key);                      // If both address[14] AND address[13] are true, we read from the keyboard (if any of the other bits are one, we are in an invalid address, so we only care about these bits)
     Mux16(a=out1, b=keyout, sel=key, out=out);
 }

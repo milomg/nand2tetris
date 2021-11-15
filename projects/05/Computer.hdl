@@ -19,7 +19,7 @@ CHIP Computer {
     IN reset;
 
     PARTS:
-    Memory(in=memin, load=memload, address=memaddress, out=memout);
-    ROM32K(address=pc, out=instruction);
-    CPU(inM=memout, instruction=instruction, reset=reset, outM=memin, writeM=memload, addressM=memaddress, pc=pc);
+    ROM32K(address=pc, out=instruction); // We pass in the pc to get our ROM instruction 
+    CPU(inM=memout, instruction=instruction, reset=reset, outM=memin, writeM=memload, addressM=memaddress, pc=pc); // The CPU passes writeM, outM, addressM to the memory and pc to the ROM
+    Memory(in=memin, load=memload, address=memaddress, out=memout); // Memory gives us M that we pass back into the CPU
 }

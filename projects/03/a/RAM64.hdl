@@ -15,6 +15,7 @@ CHIP RAM64 {
     OUT out[16];
 
     PARTS:
+    // We can build a ram64 by indexing over ramn8
     DMux8Way(in=load, sel=address[3..5], a=a, b=b, c=c, d=d, e=e, f=f, g=g, h=h);
     RAM8(in=in, load=a, address=address[0..2], out=rega);
     RAM8(in=in, load=b, address=address[0..2], out=regb);

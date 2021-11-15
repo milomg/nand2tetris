@@ -15,7 +15,7 @@ CHIP RAM16K {
     OUT out[16];
 
     PARTS:
-    // We can build a ram16k by just indexing over ram4k
+    // We can build a ram16k by indexing over ram4k (note that 8^x != 2^14, so we use 4 ram4k modules instead of 8)
     DMux4Way(in=load, sel=address[12..13], a=a, b=b, c=c, d=d);
     RAM4K(in=in, load=a, address=address[0..11], out=rega);
     RAM4K(in=in, load=b, address=address[0..11], out=regb);

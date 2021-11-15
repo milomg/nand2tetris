@@ -11,50 +11,54 @@
 // "white" in every pixel;
 // the screen should remain fully clear as long as no key is pressed.
 
-// Put your code here.
-    @R0
-    @R1
-(CHECK)
-    @SCREEN
-    D=A
-    @R1
-    M=D
+(CHECK)        // Check if a key is pressed and jump to either fill or clear.
     @KBD
     D=M
-    @FILL
-    D;JNE
+
     @CLEAR
     D;JEQ
-(FILL)
-    @R0
-    D=M
-    @CHECK
-    D;JNE
-    D=-1
-    @R0
-    M=D
-    @LOOP
+
+    @FILL
     0;JMP
+
+(FILL)          // Set the fill color to black and see if we should start the fill loop
+    @fill_color // Set the fill color to black.
+    MD=-1       // Also store the color to check with the screen color in LOOP_START
+
+    @LOOP_START // Jump to the fill loop
+    0;JMP
+
 (CLEAR)
-    @R0
-    D=M
+    @fill_color // Set the fill color to white
+    MD=0        // Also store the color to check with the screen color in LOOP_START
+
+(LOOP_START)
+    @SCREEN     // Check the screen color
+    D=M-D       // If the first screen color is the same as the fill color,
     @CHECK
-    D;JEQ
-    @R0
-    M=0
-    @LOOP
-    0;JMP
-(LOOP)
-    @R0
-    D=M
-    @R1
-    A=M
+    D;JEQ       // bail on the LOOP and jump back to CHECK.
+
+    @SCREEN     // Store the start of the screen in i 
+    D=A
+    @i
     M=D
-    @R1
-    MD=M+1
+
+(LOOP)
+    @fill_color
+    D=M         // Store the fill color in D
+
+    @i
+    A=M
+    M=D        // Write the fill color (D) to RAM[i]
+
+    @i
+    MD=M+1     // Increment i, and store in D so we can check if we're done.
+    
     @KBD
-    D=D-A
-    @LOOP
-    D;JNE
-    @CHECK
+    D=D-A      // If i==KBD, we have finished the loop (because the screen ends exactly at KBD-1), 
+
+    @CHECK     // we jump to CHECK
     D;JEQ
+
+    @LOOP      // Otherwise, we continue the LOOP
+    D;JNE
