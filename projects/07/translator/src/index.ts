@@ -7,46 +7,60 @@ const lines = readFileSync(file, "utf8")
   .map((x) => x.trim())
   .filter((x) => !x.startsWith("//") && x != "");
 
+const table = {
+  local:"LCL",
+  argument:"ARG",
+  this: "THIS",
+  that: "THAT",
+  temp: "R5",
+};
+const table2 = {
+  pointer0: "THIS",
+  pointer1: "THAT",
+};
+
 const output = [];
 let counter = 0;
 for (const line of lines) {
   let pieces = line.split(/ +/g);
-  if (pieces[0] == "push" && pieces[1] == "constant") {
+  if (pieces[0] == "push" && (["constant", "local", "argument", "this", "that", "temp", "pointer"].includes(pieces[1]))) {
+    if(pieces[1] == "pointer"){
+      output.push("@" + table2[pieces[1] + pieces[2]]);
+      output.push("D=M");
+    }else if (pieces[1] == "constant") {
+      output.push("@" + pieces[2]);
+      output.push("D=A");
+    }else{
     output.push("@" + pieces[2]);
-    output.push("D=A");
-    output.push("@SP");
-    output.push("A=M");
-    output.push("M=D");
-    output.push("@SP");
-    output.push("M=M+1");
-  } else if (pieces[0] == "push" && (pieces[1] == "local" || pieces[1] == "argument" || pieces[1] == "this" || pieces[1] == "that")) {
-    output.push("@" + ({local:"LCL", argument:"ARG", this: "THIS", that: "THAT"})[pieces[1]]);
-    output.push("D=M");
-    output.push("@" + pieces[2]);
+    output.push(pieces[1]=="temp"?"D=A":"D=M");
+    output.push("@" + table[pieces[1]]);
     output.push("A=D+A");
     output.push("D=M");
+    }
     output.push("@SP");
     output.push("A=M");
     output.push("M=D");
     output.push("@SP");
     output.push("M=M+1");
-  } else if (pieces[0] == "pop" && (pieces[1] == "local" || pieces[1] == "argument" || pieces[1] == "this" || pieces[1] == "that")) {
+  } else if (pieces[0] == "pop" && (["local", "argument", "this", "that", "temp"].includes(pieces[1]))) {
+    output.push("@" + table[pieces[1]]);
+    output.push(pieces[1]=="temp"?"D=A":"D=M");
     output.push("@" + pieces[2]);
-    output.push("D=A");
-    output.push("@" + ({local:"LCL", argument:"ARG", this: "THIS", that: "THAT"})[pieces[1]]);
-    output.push("M=M+D");
+    output.push("D=D+A");
+    output.push("@R13");
+    output.push("M=D");
     output.push("@SP");
-    output.push("A=M");
+    output.push("AM=M-1");
     output.push("D=M");
-    output.push("@SP");
-    output.push("M=M-1");
-    output.push("@" + ({local:"LCL", argument:"ARG", this: "THIS", that: "THAT"})[pieces[1]]);
+    output.push("@R13");
     output.push("A=M");
     output.push("M=D");
-    output.push("@" + pieces[2]);
-    output.push("D=A");
-    output.push("@" + ({local:"LCL", argument:"ARG", this: "THIS", that: "THAT"})[pieces[1]]);
-    output.push("M=M-D");
+  } else if (pieces[0] == "pop" && (pieces[1] == "pointer")) {
+    output.push("@SP");
+    output.push("AM=M-1");
+    output.push("D=M");
+    output.push("@" + table2[pieces[1] + pieces[2]]);
+    output.push("M=D");
   } else if (pieces[0] == "add" || pieces[0] == "sub" || pieces[0] == "and" || pieces[0] == "or") {
     output.push("@SP");
     output.push("AM=M-1");
