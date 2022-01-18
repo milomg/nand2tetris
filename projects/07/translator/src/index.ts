@@ -19,6 +19,34 @@ for (const line of lines) {
     output.push("M=D");
     output.push("@SP");
     output.push("M=M+1");
+  } else if (pieces[0] == "push" && (pieces[1] == "local" || pieces[1] == "argument" || pieces[1] == "this" || pieces[1] == "that")) {
+    output.push("@" + ({local:"LCL", argument:"ARG", this: "THIS", that: "THAT"})[pieces[1]]);
+    output.push("D=M");
+    output.push("@" + pieces[2]);
+    output.push("A=D+A");
+    output.push("D=M");
+    output.push("@SP");
+    output.push("A=M");
+    output.push("M=D");
+    output.push("@SP");
+    output.push("M=M+1");
+  } else if (pieces[0] == "pop" && (pieces[1] == "local" || pieces[1] == "argument" || pieces[1] == "this" || pieces[1] == "that")) {
+    output.push("@" + pieces[2]);
+    output.push("D=A");
+    output.push("@" + ({local:"LCL", argument:"ARG", this: "THIS", that: "THAT"})[pieces[1]]);
+    output.push("M=M+D");
+    output.push("@SP");
+    output.push("A=M");
+    output.push("D=M");
+    output.push("@SP");
+    output.push("M=M-1");
+    output.push("@" + ({local:"LCL", argument:"ARG", this: "THIS", that: "THAT"})[pieces[1]]);
+    output.push("A=M");
+    output.push("M=D");
+    output.push("@" + pieces[2]);
+    output.push("D=A");
+    output.push("@" + ({local:"LCL", argument:"ARG", this: "THIS", that: "THAT"})[pieces[1]]);
+    output.push("M=M-D");
   } else if (pieces[0] == "add" || pieces[0] == "sub" || pieces[0] == "and" || pieces[0] == "or") {
     output.push("@SP");
     output.push("AM=M-1");
@@ -50,7 +78,7 @@ for (const line of lines) {
     output.push("(DONE." + counter + ")");
     counter++;
   } else {
-    console.log("UNKNOWN");
+    console.log("UNKNOWN", line);
   }
 }
 
