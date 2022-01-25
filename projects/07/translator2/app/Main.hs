@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Control.Monad.State (State, evalState, get, modify, put)
-import Data.Text (Text, lines, pack, strip, takeWhile, unlines, unpack, words, unwords)
+import Control.Monad.State (State, evalState, get, modify)
+import Data.Text (Text, pack, strip)
+import qualified Data.Text as T (lines, takeWhile, unlines, unwords, words)
 import qualified Data.Text.IO as IO
-import Data.Text.Read (decimal)
 import Fmt ((+|), (|+))
 import System.Environment (getArgs)
 import System.FilePath (replaceExtension, takeBaseName)
@@ -25,10 +25,11 @@ arithmetic str = "@SP\nAM=M-1\nD=M\nA=A-1\nM=M" +| str |+ "D"
 bit :: Text -> Text
 bit str = "@SP\nA=M-1\nM=" +| str |+ "M"
 
+{- ORMOLU_DISABLE -}
 logic :: Text -> Text -> State Int Text
 logic fileName str = do
   counter <- get
-  put $ counter + 1
+  modify (+ 1)
   return $
     "@SP\nAM=M-1\nD=M\nA=A-1\nD=M-D\nM=0\n\
     \@TRUTHY." +| fileName |+ "." +| counter |+ "\n\
@@ -38,6 +39,7 @@ logic fileName str = do
     \(TRUTHY." +| fileName |+ "." +| counter |+ ")\n\
     \@SP\nA=M-1\nM=-1\n\
     \(DONE." +| fileName |+ "." +| counter |+ ")"
+{- ORMOLU_ENABLE -}
 
 pushBody = "@SP\nM=M+1\nA=M-1\nM=D"
 
@@ -78,10 +80,10 @@ processItem _ ["not"] = return $ bit "!"
 processItem fileName ["eq"] = logic fileName "JEQ"
 processItem fileName ["lt"] = logic fileName "JLT"
 processItem fileName ["gt"] = logic fileName "JGT"
-processItem _ a = error $ "Unknown command: " +| Data.Text.unwords a |+ ""
+processItem _ a = error $ "Unknown command: " +| T.unwords a |+ ""
 
 parseFile :: Text -> [Text]
-parseFile = filter (/= "") . map (strip . Data.Text.takeWhile (/= '/')) . Data.Text.lines
+parseFile = filter (/= "") . map (strip . T.takeWhile (/= '/')) . T.lines
 
 main :: IO ()
 main = do
@@ -90,7 +92,7 @@ main = do
   file <- IO.readFile fileName
 
   let fileLines = parseFile file
-  let parser = processItem (pack $ takeBaseName fileName) . Data.Text.words
-  let output = Data.Text.unlines $ evalState (mapM parser fileLines) 0
+  let parser = processItem (pack $ takeBaseName fileName) . T.words
+  let output = T.unlines $ evalState (mapM parser fileLines) 0
 
   IO.writeFile (replaceExtension fileName "asm") output
