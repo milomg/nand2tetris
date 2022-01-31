@@ -1,5 +1,5 @@
 cabal-version:      2.4
-name:               translator2
+name:               translator
 version:            0.1.0.0
 
 author:             modderme123
@@ -7,12 +7,12 @@ maintainer:         modderme123@gmail.com
 
 extra-source-files: README.md
 
-executable translator2
+executable translator
     main-is:          Main.hs
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.14.2.0,
+    build-depends:    base ^>=4.16.0.0,
                       text ^>=1.2.4.1,
                       mtl ^>=2.2.2,
                       filepath ^>=1.4.2.1,

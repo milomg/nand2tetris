@@ -1,13 +1,13 @@
 import { readFileSync, writeFileSync } from "fs";
 import { parse } from "path";
 
-// TODO: Is it an issue that files that end in // are not trimmed correctly?
 const file = process.argv[2];
 const lines = readFileSync(file, "utf8")
-  .replace(/[\r\n]+/g, "\n")
-  .split("\n")
-  .map((x) => x.trim())
-  .filter((x) => !x.startsWith("//") && x != "");
+  .replace(/\/\/.*/g, "") // strip comments
+  .replace(/[\r\n]+/g, "\n") // strip multiple newlines
+  .split("\n") // split into lines
+  .map((x) => x.trim()) // trim whitespace
+  .filter((x) => x != ""); // trim empty lines
 
 const fileName = parse(file).name;
 
