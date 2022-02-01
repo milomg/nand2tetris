@@ -1,3 +1,3 @@
-# Translator2
+# Translator
 
-`cabal run translator2 ../StackArithmetic/SimpleAdd/SimpleAdd.vm`
+`cabal new-run translator ../ProgramFlow/FibonacciSeries/FibonacciSeries.vm`

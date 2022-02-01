@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 import BasicPrelude
 import Control.Monad.State (State, evalState, get, put)
 import Data.Text (pack, strip, unpack)
@@ -42,6 +39,7 @@ logic fileName str = do
         "(DONE." ++ fileName ++ "." ++ mycount ++ ")"
       ]
 
+pushBody :: Text
 pushBody = "@SP\nM=M+1\nA=M-1\nM=D"
 
 push :: Text -> Text -> Text -> Text
@@ -50,12 +48,13 @@ push _ "pointer" "0" = "@THIS\nD=M\n" ++ pushBody
 push _ "pointer" "1" = "@THAT\nD=M\n" ++ pushBody
 push _ "temp" offset = "@" ++ parseTemp offset ++ "\nD=M\n" ++ pushBody
 push fileName "static" offset = "@" ++ fileName ++ "." ++ offset ++ "\nD=M\n" ++ pushBody
-push fileName "local" offset = "@LCL\nD=M\n@" ++ offset ++ "\nA=D+A\nD=M\n" ++ pushBody
-push fileName "argument" offset = "@ARG\nD=M\n@" ++ offset ++ "\nA=D+A\nD=M\n" ++ pushBody
-push fileName "this" offset = "@THIS\nD=M\n@" ++ offset ++ "\nA=D+A\nD=M\n" ++ pushBody
-push fileName "that" offset = "@THAT\nD=M\n@" ++ offset ++ "\nA=D+A\nD=M\n" ++ pushBody
+push _ "local" offset = "@LCL\nD=M\n@" ++ offset ++ "\nA=D+A\nD=M\n" ++ pushBody
+push _ "argument" offset = "@ARG\nD=M\n@" ++ offset ++ "\nA=D+A\nD=M\n" ++ pushBody
+push _ "this" offset = "@THIS\nD=M\n@" ++ offset ++ "\nA=D+A\nD=M\n" ++ pushBody
+push _ "that" offset = "@THAT\nD=M\n@" ++ offset ++ "\nA=D+A\nD=M\n" ++ pushBody
 push _ t offset = error (unpack $ "push " ++ t ++ " " ++ offset ++ " not implemented")
 
+popBody :: Text
 popBody = "D=A+D\n@R13\nM=D\n@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D"
 
 pop :: Text -> Text -> Text -> Text
