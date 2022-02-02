@@ -11,14 +11,20 @@ executable translator
     main-is:          Main.hs
 
     ghc-options:      -Wall
-                      -XOverloadedStrings
-                      -XNoImplicitPrelude
+                      -Wpartial-fields
+                      -Wincomplete-record-updates
+                      -Wincomplete-uni-patterns
+                      -Widentities
+                      -funclutter-valid-hole-fits
+
+    default-extensions:  OverloadedStrings,
+                         NoImplicitPrelude
 
     build-depends:    base ^>=4.16.0.0,
                       text ^>=1.2.4.1,
                       mtl ^>=2.2.2,
                       filepath ^>=1.4.2.1,
-                      basic-prelude ^>=0.7.0
+                      basic-prelude ^>=0.7.0,
+                      directory ^>=1.3.7.0
     hs-source-dirs:   app
     default-language: Haskell2010
-
