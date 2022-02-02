@@ -1,5 +1,6 @@
 import BasicPrelude
 import Control.Monad.State (State, evalState, get, put, runState)
+import qualified Data.List
 import Data.Text (pack, strip, unpack)
 import qualified Data.Text as T (takeWhile)
 import Data.Text.Read (decimal)
@@ -153,6 +154,16 @@ processItem _ a = error (unpack $ "Unknown command: " ++ unwords a)
 parseFile :: Text -> [Text]
 parseFile = filter (/= "") . map (strip . T.takeWhile (/= '/')) . lines
 
+runFile :: FilePath -> IO (State MyState [Text])
+runFile file = do
+  contents <- readFile file
+  let parsed = (parseFile contents)
+  let mapper = processItem (pack $ takeBaseName file)
+  let magic = \x -> do
+        out <- mapper (words x)
+        return $ "//" ++ x ++ "\n" ++ out
+  return $ mapM magic parsed
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -161,27 +172,24 @@ main = do
   let isFolder = not (".vm" `isSuffixOf` fileName)
 
   let initialState = MyState {counter = 0, functionName = ""} -- The initial state is just a zeroed counter and a blank function name
-  let (bootstrap, istate) = if isFolder 
-                                then do 
-                                  let (callSysInit, incCounter) = runState (callT "Sys.init" "0") initialState
-                                  ("// Bootstrap code\n@256\nD=A\n@SP\nM=D\n" ++ (callSysInit) ++ "\n", incCounter) else ("", initialState)
-
-  let parser = processItem (pack $ takeBaseName fileName) . words -- The parser is just processItem with the fileName already passed in, composed with words (split a string on spaces)
+  let (bootstrap, istate) =
+        if isFolder
+          then do
+            let (callSysInit, incCounter) = runState (callT "Sys.init" "0") initialState
+            ("// Bootstrap code\n@256\nD=A\n@SP\nM=D\n" ++ (callSysInit) ++ "\n", incCounter)
+          else ("", initialState)
 
   files <-
     if isFolder
       then do
         allFiles <- getDirectoryContents fileName
-        mapM (readFile . (fileName </>)) (filter (".vm" `isSuffixOf`) allFiles)
+        mapM (runFile . (fileName </>)) (filter (".vm" `isSuffixOf`) allFiles)
       else do
-        file <- readFile fileName
+        file <- runFile fileName
         return [file]
 
-  let fileLines = parseFile $ unlines files
-  
-  let mapped = evalState (mapM parser fileLines) istate
-  let commented = map ("//" ++) fileLines
-  let output = bootstrap ++ (unlines $ concat (transpose [commented, mapped]))
+  let mapped = evalState (mapM id files) istate
+  let output = bootstrap ++ unlines (Data.List.concat mapped)
   let outfile =
         if isFolder
           then fileName </> addExtension (takeFileName (dropTrailingPathSeparator fileName)) "asm"
