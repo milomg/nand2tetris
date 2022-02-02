@@ -95,9 +95,7 @@ functionT :: Text -> Text -> State MyState Text
 functionT name n = do
   state <- get
   put state {functionName = name}
-  return $
-    "(" ++ name ++ ")\n"
-      ++ (intercalate "\n" $ replicate (parseArgs n) ("@SP\nM=M+1\nA=M-1\nM=0"))
+  return $ intercalate "\n" $ ("(" ++ name ++ ")") : (replicate (parseArgs n) ("@SP\nM=M+1\nA=M-1\nM=0"))
 
 callT :: Text -> Text -> State MyState Text
 callT name n = do
@@ -129,7 +127,7 @@ returnT =
       ++ "@LCL\nAM=M-1\nD=M\n@THIS\nM=D\n"
       ++ "@LCL\nAM=M-1\nD=M\n@ARG\nM=D\n"
       ++ "@LCL\nA=M-1\nD=M\n@LCL\nM=D\n"
-      ++ "@R13\nA=M\n0;JMP\n"
+      ++ "@R13\nA=M\n0;JMP"
 
 processItem :: Text -> [Text] -> State MyState Text
 processItem fileName ["push", location, dest] = return $ push fileName location dest
