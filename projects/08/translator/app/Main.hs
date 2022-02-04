@@ -7,23 +7,61 @@ import Data.Text.Read (decimal)
 import System.Directory (getDirectoryContents)
 import System.FilePath (addExtension, dropTrailingPathSeparator, replaceExtension, takeBaseName, takeFileName)
 
+{-
+
+**
+A text rendition of xkcd.com/1296 for your viewing pleasure.
+**
+
+-------|-------------comment-----------------|-----date-------
+*       created main loop & timing control	   14 hours ago
+|
+*       enabled config file parsing	           9 hours ago
+|
+*       misc bugfixes	                         5 hours ago
+|
+*       code additions/edits                   4 hours ago
+|
+*       more code	                             4 hours ago
+|\
+| *     here have code	                       4 hours ago
+| |
+| *     aaaaaaaa                               3 hours ago
+|/
+*       adkfjslkdfjsdklfj                      2 hours ago
+|
+*       my hands are typing words              2 hours ago
+|
+*       haaaaaaaaands                          2 hours ago
+
+            As a project drags on, my commit
+            messages get less and less informative.
+
+-}
+
 data MyState = MyState
   { counter :: Int,
     functionName :: Text
   }
 
+-- Parse the offset for a temp file, if it is larger than 7 thrown an error
 parseTemp :: Text -> Text
 parseTemp offset =
   case decimal offset of
     Right (b, _) | b <= 7 -> "R" ++ tshow (5 + b :: Int)
     _ -> error (unpack $ "Uknown temp location: " ++ offset)
 
+-- The string for an arithmetic command like add, sub, and, or.
 arithmetic :: Text -> Text
 arithmetic str = "@SP\nAM=M-1\nD=M\nA=A-1\nM=M" ++ str ++ "D"
 
+-- The string for a one bit command like neg, not.
+--    > Two bytes meet.  The first byte asks, “Are you ill?”
+--    > The second byte replies, “No, just feeling a bit off.”
 bit :: Text -> Text
 bit str = "@SP\nA=M-1\nM=" ++ str ++ "M"
 
+-- The string for a logic command like eq, gt, lt.
 logic :: Text -> Text -> State MyState Text
 logic fileName str = do
   state <- get
@@ -44,6 +82,7 @@ logic fileName str = do
 pushBody :: Text
 pushBody = "@SP\nM=M+1\nA=M-1\nM=D"
 
+-- The string for a push command, handles push {constant pointer temp static local argument this that}, otherwise throws an error
 push :: Text -> Text -> Text -> Text
 push _ "constant" offset = "@" ++ offset ++ "\nD=A\n" ++ pushBody
 push _ "pointer" "0" = "@THIS\nD=M\n" ++ pushBody
@@ -59,6 +98,7 @@ push _ t offset = error (unpack $ "push " ++ t ++ " " ++ offset ++ " not impleme
 popBody :: Text
 popBody = "D=A+D\n@R13\nM=D\n@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D"
 
+-- The string for a pop command, handles pop {constant pointer temp static local argument this that}, otherwise throws an error
 pop :: Text -> Text -> Text -> Text
 pop _ "pointer" "0" = "@SP\nAM=M-1\nD=M\n@THIS\nM=D"
 pop _ "pointer" "1" = "@SP\nAM=M-1\nD=M\n@THAT\nM=D"
@@ -120,7 +160,7 @@ callT name n = do
 returnT :: State MyState Text
 returnT =
   return $
-    "@LCL\nD=M\n@5\nA=D-A\nD=M\n@R13\nM=D\n" -- TODO: Why can't this go two lines down?
+    "@LCL\nD=M\n@5\nA=D-A\nD=M\n@R13\nM=D\n"
       ++ "@SP\nA=M-1\nD=M\n@ARG\nA=M\nM=D\n"
       ++ "D=A+1\n@SP\nM=D\n"
       ++ "@LCL\nAM=M-1\nD=M\n@THAT\nM=D\n"
@@ -169,24 +209,26 @@ main = do
   let fileName = unpack $ head args
   let isFolder = not (".vm" `isSuffixOf` fileName)
 
-  let initialState = MyState {counter = 0, functionName = ""} -- The initial state is just a zeroed counter and a blank function name
-  let (bootstrap, istate) =
+  let zeroState = MyState {counter = 0, functionName = ""} -- The initial state is just a zeroed counter and a blank function name
+  let (bootstrap, firstState) =
+        -- We return our true first state that might be changed by calling a function in bootstrap
         if isFolder
           then do
-            let (callSysInit, incCounter) = runState (callT "Sys.init" "0") initialState
+            let (callSysInit, incCounter) = runState (callT "Sys.init" "0") zeroState
             ("// Bootstrap code\n@256\nD=A\n@SP\nM=D\n" ++ (callSysInit) ++ "\n", incCounter)
-          else ("", initialState)
+          else ("", zeroState)
 
   files <-
     if isFolder
       then do
         allFiles <- getDirectoryContents fileName
+        -- Some people, when confronted with a problem, think, 'I know, I'll use threads' - and then two they hav erpoblesms.
         mapM (runFile . (fileName </>)) (filter (".vm" `isSuffixOf`) allFiles)
       else do
         file <- runFile fileName
         return [file]
 
-  let mapped = evalState (mapM id files) istate
+  let mapped = evalState (mapM id files) firstState
   let output = bootstrap ++ unlines (Data.List.concat mapped)
   let outfile =
         if isFolder
