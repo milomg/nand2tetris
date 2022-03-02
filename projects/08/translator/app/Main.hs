@@ -81,7 +81,7 @@ logic fileName str = do
       ]
 
 pushBody :: Text
-pushBody = "@SP\nM=M+1\nA=M-1\nM=D" -- *(SP++) = D
+pushBody = "@SP\nM=M+1\nA=M-1\nM=D" -- (SP++) = D
 
 -- The string for a push command, handles push {constant pointer temp static local argument this that}, otherwise throws an error
 push :: Text -> Text -> Text -> Text
@@ -141,40 +141,35 @@ functionT name n = do
   put state {functionName = name}
   return $ intercalate "\n" $ ("(" ++ name ++ ")") : (replicate (parseArgs n) ("@SP\nM=M+1\nA=M-1\nM=0"))
 
+stackLocals :: [Text]
+stackLocals = ["@LCL", "@ARG", "@THIS", "@THAT"]
+
 callT :: Text -> Text -> State MyState Text
 callT name n = do
   state <- get
   let mycount = tshow $ counter state
   put state {counter = counter state + 1} -- Bump the global function counter (technically we could have a unique counter for logic and return, but this felt simpler)
   return $
-    intercalate -- I use intercalate instead of unlines because I don't want a trailing newline
-      "\n"
-      [ "@RETURN." ++ mycount,
-        "D=A\n@SP\nM=M+1\nA=M-1\nM=D",
-        "@LCL\nD=M\n@SP\nM=M+1\nA=M-1\nM=D",
-        "@ARG\nD=M\n@SP\nM=M+1\nA=M-1\nM=D",
-        "@THIS\nD=M\n@SP\nM=M+1\nA=M-1\nM=D",
-        "@THAT\nD=M\n@SP\nM=M+1\nA=M-1\nM=D",
-        "@SP\nD=M\n@LCL\nM=D\n@" ++ n ++ "\nD=D-A\n@5\nD=D-A\n@ARG\nM=D",
-        "@" ++ name,
-        "0;JMP",
-        "(RETURN." ++ mycount ++ ")"
-      ]
+    ("@RETURN." ++ mycount ++ "\n")
+      ++ "D=A\n@SP\nM=M+1\nA=M-1\nM=D\n" -- Push return address
+      ++ unlines (map (++ "\nD=M\n@SP\nM=M+1\nA=M-1\nM=D") stackLocals) -- Store rest of frame onto stack
+      ++ ("@SP\nD=M\n@LCL\nM=D\n@" ++ n ++ "\nD=D-A\n@5\nD=D-A\n@ARG\nM=D\n") -- LCL=SP, ARG=SP-n-5
+      ++ ("@" ++ name ++ "\n0;JMP\n") -- Jump to called function
+      ++ ("(RETURN." ++ mycount ++ ")")
 
 returnT :: State MyState Text
 returnT =
   return $
-    "@LCL\nD=M\n@5\nA=D-A\nD=M\n@R13\nM=D\n" -- I finally figured out why this can't go two lines down
-      ++ "@SP\nA=M-1\nD=M\n@ARG\nA=M\nM=D\n" -- when there are no arguments, arg=lcl-5, so this might overwrite lcl
-      ++ "D=A+1\n@SP\nM=D\n"
-      ++ "@LCL\nAM=M-1\nD=M\n@THAT\nM=D\n" -- Luckily, decrementing local is safe
-      ++ "@LCL\nAM=M-1\nD=M\n@THIS\nM=D\n"
-      ++ "@LCL\nAM=M-1\nD=M\n@ARG\nM=D\n"
-      ++ "@LCL\nA=M-1\nD=M\n@LCL\nM=D\n"
+    -- Line by line: R13=LCL-5, *ARP=pop(), SP=ARG+1, [RESTORE LOCALS FROM FRAME], goto R13
+    "@LCL\nD=M\n@5\nA=D-A\nD=M\n@R13\nM=D\n" -- Why this can't go two lines down (which would allow other optimizations):
+      ++ "@SP\nA=M-1\nD=M\n@ARG\nA=M\nM=D\n" -- when there are no arguments, arg=lcl-5, so setting arg would overwrite lcl
+      ++ "D=A+1\n@SP\nM=D\n" -- Set SP=ARG+1 (we are already pointing at ARG)
+      ++ unlines (map (\x -> "@LCL\nAM=M-1\nD=M\n" ++ x ++ "\nM=D\n") (reverse stackLocals)) -- Luckily, decrementing local is safe
       ++ "@R13\nA=M\n0;JMP"
 
 -- Parse a single line of assembly (haskell pattern matches when calling functions)
 processItem :: Text -> [Text] -> State MyState Text
+processItem _ [] = return "" -- Ignore empty lines
 processItem fileName ["push", location, dest] = return $ push fileName location dest
 processItem fileName ["pop", location, dest] = return $ pop fileName location dest
 processItem _ ["add"] = return $ arithmetic "+"
@@ -194,23 +189,24 @@ processItem _ ["call", name, n] = callT name n
 processItem _ ["return"] = returnT
 processItem _ a = error (unpack $ "Unknown command: " ++ unwords a)
 
--- Strip commends and empty lines
-parseFile :: Text -> [Text]
-parseFile = filter (/= "") . map (strip . T.takeWhile (/= '/')) . lines
+-- Strip comments and empty lines
+trimLine :: Text -> Text
+trimLine = (strip . T.takeWhile (/= '/'))
 
 -- This is the majority of the work on each file, takes a filename and returns the assembly code with some monads for reading io and state
 --
---   > 1990 - A committee formed by Simon Peyton-Jones, Paul Hudak, Philip Wadler, Ashton Kutcher, and People for the Ethical Treatment of Animals creates Haskell, 
---   > a pure, non-strict, functional language. Haskell gets some resistance due to the complexity of using monads to control side effects. 
+--   > 1990 - A committee formed by Simon Peyton-Jones, Paul Hudak, Philip Wadler, Ashton Kutcher, and People for the Ethical Treatment of Animals creates Haskell,
+--   > a pure, non-strict, functional language. Haskell gets some resistance due to the complexity of using monads to control side effects.
 --   > Wadler tries to appease critics by explaining that "a monad is a monoid in the category of endofunctors, what's the problem?"
 --   Excerpt from A Brief, Incomplete, and Mostly Wrong History of Programming Languages (http://james-iry.blogspot.com/2009/05/brief-incomplete-and-mostly-wrong.html)
 runFile :: FilePath -> IO (State MyState [Text])
 runFile file = do
   contents <- readFile file
-  let parsed = (parseFile contents)
+  let parsed = lines contents
   let mapper = processItem (pack $ takeBaseName file) -- We pass in the filename to process item only once because of the ✨magic of currying✨ (this returns a function that takes the remaining arguments of processItem and runs it on them)
-  let magic = \x -> do -- Create a variation of the mapper function that also adds a comment with the initial command
-        out <- mapper (words x)
+  let magic = \x -> do
+        -- Create a variation of the mapper function that also adds a comment with the initial command
+        out <- mapper (words $ trimLine x)
         return $ "//" ++ x ++ "\n" ++ out
   return $ mapM magic parsed
 
@@ -220,16 +216,14 @@ main = do
 
   let fileName = unpack $ head args -- Unpack converts from Text to String, required for handling paths in haskell
   let isFolder = not (".vm" `isSuffixOf` fileName) -- If the first argument is a folder, we need to process all vm files in it
-
   let zeroState = MyState {counter = 0, functionName = ""} -- The initial state is just a zeroed counter and a blank function name
   let (bootstrap, firstState) =
         -- We return our true first state that might be changed by calling a function in bootstrap
         if isFolder
-          then do
+          then
             let (callSysInit, incCounter) = runState (callT "Sys.init" "0") zeroState -- Returns assembly commands to call sys.init and an updated copy of the initial state
-            ("// Bootstrap code\n@256\nD=A\n@SP\nM=D\n" ++ (callSysInit) ++ "\n", incCounter)
+             in ("// Bootstrap code\n@256\nD=A\n@SP\nM=D\n" ++ (callSysInit) ++ "\n", incCounter)
           else ("", zeroState) -- If we're not a folder, the bootstrap is empty and the initial state still starts at counter=0
-
   files <-
     if isFolder
       then do
