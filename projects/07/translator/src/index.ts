@@ -60,8 +60,8 @@ function writePush(location: string, offset: string) {
   }
 
   if (location == "pointer" || location == "temp") {
-    // Unfortunately I wasn't able to dependently type inlineTable, so I check if it is undefined and throw an error.
-    const address = inlineTable[location + offset];
+    // Unfortunately I wasn't ableo to dependently type inlineTable, so I check if it is undefined and throw an error.
+    const address = inlineTable[`${location}${offset}`];
     if (address == undefined) {
       throw new Error(`Unknown offset (${offset}) in line: push ${location} ${offset}`);
     }

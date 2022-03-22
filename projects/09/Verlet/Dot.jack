@@ -1,0 +1,114 @@
+class Dot {
+  field Number x, y, velx, vely;
+  field boolean selected;
+
+  static Number one, w, h, m, two_thirds, fifty, neg_fifty;
+  static int mass;
+  function void initialize() {
+    var Number three;
+    let three = Number.new(3);
+    let mass = 5;
+    let one = Number.new(1);
+    let w = Number.new(511 - mass);
+    let h = Number.new(127 - mass);
+    let m = Number.new(mass);
+    let two_thirds = Number.new(2);
+    do two_thirds.do_div(three);
+    let fifty = Number.new(50);
+    let neg_fifty = Number.new(-50);
+    return;
+  }
+  constructor Dot new(int _x, int _y) {
+    let x = Number.new(_x);
+    let y = Number.new(_y);
+    let velx = Number.new(0);
+    let vely = Number.new(0);
+    return this;
+  }
+
+  method boolean getSelected() {
+    return selected;
+  }
+  method void setSelected(boolean _selected) {
+    let selected = _selected;
+    return;
+  }
+  method void setX(Number newX) {
+    let x = newX;
+    return;
+  }
+  method Number getX() {
+    return x;
+  }
+  method void setY(Number newX) {
+    let y = newX;
+    return;
+  }
+  method Number getY() {
+    return y;
+  }
+  method Number getVelY() {
+    return vely;
+  }
+  method Number getVelX() {
+    return velx;
+  }
+
+  // add to y
+  method void gravity() {
+    do y.do_add(one);
+    return;
+  }
+
+  method int getMass() {
+    return mass;
+  }
+
+  method void update() {
+    // let x = x + velx;
+    // let y = y + vely;
+    do x.do_add(velx);
+    do y.do_add(vely);
+    do vely.do_add(one);
+
+    if (y.cmp(h) > 0) {
+      do y.set_from_other(h);
+      do velx.do_mul(two_thirds);
+      do vely.do_mul(two_thirds);
+    }
+    if (y.cmp(m) < 0) {
+      do y.set_from_other(m);
+    }
+    if (x.cmp(m) < 0) {
+      do x.set_from_other(m);
+    }
+
+    if (x.cmp(w) > 0) {
+      do x.set_from_other(w);
+    }
+
+    if (velx.cmp(fifty)>0) {
+      do velx.set_from_other(fifty);
+    }
+    if (velx.cmp(neg_fifty) < 0) {
+      do velx.set_from_other(neg_fifty);
+    }
+    if (vely.cmp(fifty)>0) {
+      do vely.set_from_other(fifty);
+    }
+    if (vely.cmp(neg_fifty) < 0) {
+      do vely.set_from_other(neg_fifty);
+    }
+
+    return;
+  }
+
+  // draw a circle with radius mass
+  method void draw() {
+    var int _x, _y;
+    let _x = x.get_int();
+    let _y = y.get_int();
+    do Screen.drawCircle(_x, _y, mass);
+    return;
+  }
+}

@@ -1,0 +1,170 @@
+class Game {
+  field int mx, my; // mouseX, mouseY
+  field boolean holding; // is mouse down (space to toggle)
+  field Dot currentNode; // selected node
+  field Array dots;
+  field Array edges;
+  field int dotsLength, edgesLength;
+  field boolean paused;
+
+  method void main() {
+    do update();
+    // do updateKeys();
+
+    // do Sys.wait(16);
+
+    do Screen.clearScreen();
+
+    do drawMouse();
+
+    do Screen.setColor(true);
+    do drawDots();
+
+    do drawEdges();
+    return;
+  }
+
+  method void drawEdges() {
+    var int i;
+    var Edge e;
+
+    let i = 0;
+    while (i < edgesLength) {
+      let e = edges[i];
+      do e.draw();
+      let i = i + 1;
+    }
+    return;
+  }
+
+  method void drawDots() {
+    var int i;
+    var Dot d;
+    let i = 0;
+    while (i < dotsLength) {
+      let d = dots[i];
+      do d.draw();
+      let i = i + 1;
+    }
+    return;
+  }
+
+  method void update() {
+    var int i, j, x, y;
+    var Dot d;
+    var Edge e;
+
+    let i = 0;
+    while (i < dotsLength) {
+      let d = dots[i];
+      do d.update();
+      let i = i + 1;
+    }
+
+
+    let j = 0;
+
+    while (j < 1) {
+      let i = 0;
+      while (i < edgesLength) {
+        let e = edges[i];
+        do e.update();
+        let i = i + 1;
+      }
+      let j = j + 1;
+    }
+    
+    if (~(currentNode = 0)) {
+      // let x = currentNode.getX();
+      // let y = currentNode.getY();
+      // do currentNode.setX(mx);
+      // do currentNode.setY(my);
+      // do currentNode.getVelX().do_add(mx - x);
+      // do currentNode.getVelY().do_add(my - y);
+    }
+    return;
+  }
+
+  method void updateKeys() {
+    var char key;
+    var int i,x,y,x2,y2;
+    var Dot d;
+
+    let key = Keyboard.keyPressed();
+    if (key = 130) { let mx = mx - 1; }
+    if (key = 132) { let mx = mx + 1; }
+    if (key = 131) { let my = my - 1; }
+    if (key = 133) { let my = my + 1; }
+    if (key = 32) {
+      while (~(key = 0)) { 
+        let key = Keyboard.keyPressed();
+      } 
+      let holding = ~holding;
+
+      if (holding) {
+        let i = 0;
+        let currentNode = dots[i];
+        while (i < dotsLength) {
+          let d = dots[i];
+          let x = d.getX() - mx;
+          let y = d.getY() - my;
+
+          let x = x * x + y * y;
+          if (x<0) {
+            let x = 32767;
+          }
+          let x2 = currentNode.getX() - mx;
+          let y2 = currentNode.getY() - my;
+          let x2 = x2 * x2 + y2 * y2;
+          if (x2<0) {
+            let x2 = 32767;
+          }
+          if ((x)<(x2)) {
+            let currentNode = d;
+          }
+          let i = i + 1;
+        }
+        let mx = currentNode.getX();
+        let my = currentNode.getY();
+        do currentNode.setSelected(true);
+      } else {
+        do currentNode.setSelected(false);
+        let currentNode = 0;
+      }
+    }
+
+    return;
+  }
+
+  method void drawMouse() {
+    do Screen.setColor(true);
+    do Screen.drawCircle(mx, my, 7);
+    do Screen.setColor(false);
+    do Screen.drawCircle(mx, my, 6);
+    return;
+  }
+
+  constructor Game new(){
+    let mx = 256;
+    let my = 128;
+    let holding = false;
+    let dots = Array.new(10); // preallocate space for more dots and edges
+    let edges = Array.new(10);
+    let dotsLength = 4;
+    let edgesLength = 5;
+
+    let dots[0] = Dot.new(50, 50);
+    let dots[1] = Dot.new(121, 50);
+    let dots[2] = Dot.new(50, 100);
+    let dots[3] = Dot.new(100, 120);
+
+    let edges[0] = Edge.new(dots[0], dots[1]);
+    let edges[1] = Edge.new(dots[0], dots[2]);
+    let edges[2] = Edge.new(dots[1], dots[2]);
+    let edges[3] = Edge.new(dots[1], dots[3]);
+    let edges[4] = Edge.new(dots[2], dots[3]);
+
+    let paused = false;
+    return this;
+  }
+}

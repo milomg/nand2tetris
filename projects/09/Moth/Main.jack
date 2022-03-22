@@ -1,0 +1,23 @@
+class Main {
+    function void main() {
+        var Moth m;
+        var Light l;
+        var char key;
+
+        let m = Moth.new(90,200);
+        let l = Light.new(400, 20);
+        while (~(key = 81))  { // q to quit
+            do m.erase();
+            do m.move(l);
+            do m.draw();
+            do l.draw();
+            do Sys.wait(500);
+            let key = Keyboard.keyPressed();
+        }
+        do l.erase();
+        do m.erase();
+        do l.dispose();
+        do m.dispose();
+        return;
+    }
+}

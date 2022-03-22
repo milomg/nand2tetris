@@ -12,3 +12,4 @@ zig-out
 projects/07/**/*.asm
 projects/08/**/*.asm
 dist-newstyle/
+projects/09/**/*.vm

@@ -1,0 +1,108 @@
+class Edge {
+  field Dot start, end;
+  field Number length;
+
+  
+  field Number dx, dy;
+  field Number dist;
+  field Number dy2, ld, tmp;
+
+  static Number divide_thing, friction;
+  function void initialize() {
+    var Number tmp;
+    // let tmp = Number.new(20);
+    let divide_thing = Number.new(100);
+    // do half.do_div(tmp);
+    let tmp = Number.new(10);
+    let friction = Number.new(9);
+    do friction.do_div(tmp);
+    return;
+  }
+
+  constructor Edge new(Dot _start, Dot _end) {
+    let start = _start;
+    let end = _end;
+
+    let dx = end.getX();
+    let dx = dx.clone();
+    do dx.do_sub(start.getX());
+    do dx.do_mul(dx);
+
+    let dy = end.getY();
+    let dy = dy.clone();
+    do dy.do_sub(start.getY());
+    do dy.do_mul(dy);
+
+    let length = dx.clone();
+    do length.do_add(dy);
+    do length.do_sqrt();
+
+    let dist = length.clone();
+    let dy2 = dy.clone();
+    let ld = length.clone();
+    let tmp = length.clone();
+
+    return this;
+  }
+
+  // I moved this out of the node class because it operates on both nodes at once
+  method void update() {
+    do dx.set_from_other(end.getX());
+    do dx.do_sub(start.getX());
+
+    do dy.set_from_other(end.getY());
+    do dy.do_sub(start.getY());
+
+    do dist.set_from_other(dx);
+    do dist.do_mul(dx);
+
+    do dy2.set_from_other(dy);
+    do dy2.do_mul(dy);
+
+    do dist.do_add(dy2);
+    do dist.do_sqrt();
+
+    do ld.set_from_other(length);
+    do ld.do_sub(dist);
+    do ld.do_div(dist);
+    do ld.do_div(divide_thing);
+
+    do dx.do_mul(ld);
+    do dy.do_mul(ld);
+
+    if (~start.getSelected()){
+      let tmp = start.getVelX();
+      // do tmp.do_mul(friction);
+      do tmp.do_sub(dx);
+      let tmp = start.getVelY();
+      // do tmp.do_mul(friction);
+      do tmp.do_sub(dy);
+    }
+    if (~end.getSelected()){
+      let tmp = end.getVelX();
+      // do tmp.do_mul(friction);
+      do tmp.do_add(dx);
+      let tmp = end.getVelY();
+      // do tmp.do_mul(friction);
+      do tmp.do_add(dy);
+    }
+
+    return;
+  }
+  
+  // Draw a line from start to end
+  method void draw() {
+    var Number x,y,x2,y2;
+    var int ix,iy,ix2,iy2;
+    let x = start.getX();
+    let ix = x.get_int();
+    let y = start.getY();
+    let iy = y.get_int();
+    let x2 = end.getX();
+    let ix2 = x2.get_int();
+    let y2 = end.getY();
+    let iy2 = y2.get_int();
+    do Screen.drawLine(ix,iy,ix2,iy2);
+    return;
+  }
+}

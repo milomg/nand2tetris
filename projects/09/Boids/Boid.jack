@@ -1,0 +1,65 @@
+class Boid {
+
+    field int x, y; // screen location of the square's top-left corner
+    field int vx, vy; // velocity vector
+    field int size; // length of this square, in pixels
+ 
+    /** Constructs a new square with a given location and size. */
+    constructor Boid new(int Ax, int Ay) {
+       let x = Ax;
+       let y = Ay;
+       let vx = 0;
+       let vy = 0;
+       let size = 10;
+       return this;
+    }
+
+    method void draw() {
+        do Screen.setColor(true);
+        do Screen.drawRectangle(x, y, x + size, y + size);
+        return;
+    }
+
+    method int getX() {
+        return x;
+    }
+    method int getY() {
+        return y;
+    }
+    method void update(Array boids, int length) {
+        var int i, tmpx, tmpy;
+        var Boid other;
+
+        let tmpx = 0;
+        let tmpy = 0;
+        let i = 0;
+        while (i < length) {
+            let other = boids[i];
+            let tmpx = tmpx + other.getX() - x;
+            let tmpy = tmpy + other.getY() - y;
+            let i = i + 1;
+        }
+        let vx = vx + (tmpx / length);
+        let vy = vy + (tmpy / length);
+        let x = x + (vx / 100);
+        let y = y + (vy / 100);
+
+        if (x < 0) {
+            let x = 0;
+            let vx = -vx;
+        }
+        if (y < 0) {
+            let y = 0;
+            let vy = -vy;
+        }
+        if (x > (511 - size)) {
+            let x = 511 - size;
+            let vx = -vx;
+        }
+        if (y > (255 - size)) {
+            let y = 255 - size;
+            let vy = -vy;
+        }
+        return;
+    }
+}

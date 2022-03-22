@@ -1,0 +1,10 @@
+class Main {
+    function void main() {
+        var String name;
+        let name = Keyboard.readLine("What is your name?");
+        do Output.printString("Hello, ");
+        do Output.printString(name);
+        do Output.println();
+        return;
+    }
+}

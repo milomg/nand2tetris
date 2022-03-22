@@ -1,0 +1,42 @@
+class Main {
+    function void main() {
+        var Array arr, arr2;
+        var int out;
+        var boolean bool;
+
+        // Initialize the first array with some random values
+        let arr = Array.new(10);
+        let arr[0] = 8;
+        let arr[1] = 7;
+        let arr[2] = 3;
+        let arr[3] = 2;
+        let arr[4] = 1;
+        let arr[5] = 9;
+        let arr[6] = 6;
+        let arr[7] = 5;
+        let arr[8] = 2;
+        let arr[9] = 8;
+
+        let out = ArrayFunction.sum(arr, 10);
+        do Test.checkEquals("sum is 51", out = 51);
+        
+        let out = ArrayFunction.average(arr, 10);
+        do Test.checkEquals("average is 5", out = 5);
+
+        let arr2 = ArrayFunction.copy(arr, 10); // create our second array
+        let bool = ArrayFunction.equals(arr, arr2, 10, 10);
+        do Test.checkEquals("copy equals original", bool);
+
+        let arr2[4] = 0; // modify an element of the array
+        let bool = ArrayFunction.equals(arr, arr2, 10, 10);
+        do Test.checkEquals("modified copy not equals original", ~bool);
+
+        do Output.printString("arr: ");
+        do ArrayFunction.prettyPrint(arr, 10);
+        do Output.println();
+        do Output.printString("arr2: ");
+        do ArrayFunction.prettyPrint(arr2, 10);
+
+        return;
+    }
+}

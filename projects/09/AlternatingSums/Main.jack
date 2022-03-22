@@ -1,0 +1,110 @@
+class Main {
+    function void main() {
+        var Array arr;
+        var int i, /*j,*/ out;
+
+        let i = 10;
+        let arr = Array.new(i);
+        // let j = 0;
+        // while (j < i) {
+        //     let arr[j] = j;
+        //     let j = j + 1;
+        // }
+        let arr[0] = 8;
+        let arr[1] = 7;
+        let arr[2] = 3;
+        let arr[3] = 2;
+        let arr[4] = 1;
+        let arr[5] = 9;
+        let arr[6] = 6;
+        let arr[7] = 5;
+        let arr[8] = 2;
+        let arr[9] = 8;
+        let out = Main.alternatingSums(arr, i);
+        do Output.printInt(out);
+        do Output.println();
+        let out = Main.centeredAverage2(arr, i);
+        do Output.printInt(out);
+        do Output.println();
+        return;
+    }
+
+    function int alternatingSums(Array arr, int size) {
+        var int sum, i;
+        var boolean bool;
+
+        let sum = 0;
+        let i = 0;
+        let bool = false;
+
+        while (i < size) {
+            if (bool) {
+                let sum = sum + arr[i];
+                let bool = false;
+            } else {
+                let sum = sum - arr[i];
+                let bool = true;
+            }
+            let i = i + 1;
+        }
+        return sum;
+    }
+
+    function int centeredAverage2(Arrary arr, int size) {
+        var int sum, small, large, i, el;
+        let sum = 0;
+        let small = arr[0];
+        let large = arr[0];
+        let i = 0;
+        while (i < size) {
+            let el = arr[i];
+            if ((el < small)) {
+                let small = el;
+            } 
+            if ((el > large)) {
+                let large = el;
+            }
+            let sum = sum + el;
+            let i = i + 1;
+        }
+        return ((sum - small) - large) / (size - 2);
+    }
+
+    function int centeredAverage(Array arr, int size) {
+        var int sum, small, large, i, el;
+        var boolean gotsmall, gotlarge;
+
+        let i = 0;
+        let small = arr[i];
+        let large = arr[i];
+        while (i < size) {
+            let el = arr[i];
+            if (el < small) {
+                let small = el;
+            }
+            if (el > large) {
+                let large = el;
+            }
+            let i = i + 1;
+        }
+
+        let sum = 0;
+        let i = 0;
+        let gotsmall = false;
+        let gotlarge = false;
+        while (i < size) {
+            let el = arr[i];
+            if ((el = small) & ~gotsmall) {
+                let gotsmall = true;
+            } else {
+                if ((el = large) & ~gotlarge) {
+                    let gotlarge = true;
+                } else {
+                    let sum = sum + el;
+                }
+            }
+            let i = i + 1;
+        }
+        return sum / (size - 2);
+    }
+}

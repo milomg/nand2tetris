@@ -1,0 +1,18 @@
+class Main {
+    function void main() {
+        var Game g;
+
+        do Int32.initialize();
+        do Number.initialize();
+        do Dot.initialize();
+        do Edge.initialize();
+
+        let g = Game.new();
+
+        while (true) {
+            do g.main();
+        }
+
+        return;
+    }
+}

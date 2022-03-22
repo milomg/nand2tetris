@@ -1,0 +1,12 @@
+class Test {
+    function void checkEquals(String text, boolean b) {
+        do Output.printString(text);
+        if (b) {
+            do Output.printString(": OK");
+        } else {
+            do Output.printString(": FAIL");
+        }
+        do Output.println();
+        return;
+    }
+}

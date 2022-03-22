@@ -1,0 +1,38 @@
+class Main {
+    function void main() {
+        var int x, y, radius;
+        var char key;
+
+        let radius = 10;
+        let x = 50;
+        let y = 50;
+
+        do Screen.setColor(true);
+        do Screen.drawCircle(x, y, radius);
+        while (true) {
+            let key = Keyboard.keyPressed();
+            while (key = 0) { // Loop while no key is pressed to avoid flickering
+                let key = Keyboard.keyPressed();
+            }
+
+            do Screen.setColor(false);
+            do Screen.drawCircle(x, y, radius); // Erase only the previous circle
+
+            if (key = 131) { let y = y - 1; }   // up arrow
+            if (key = 133) { let y = y + 1; }   // down arrow
+            if (key = 130) { let x = x - 1; }   // left arrow
+            if (key = 132) { let x = x + 1; }   // right arrow
+   
+            if (x<radius) { let x = radius; }
+            if (x>(511-radius)) { let x = 511-radius; }
+            if (y<radius) { let y = radius; }
+            if (y>(255-radius)) { let y = 255-radius; }
+
+            do Screen.setColor(true);
+            do Screen.drawCircle(x, y, radius);
+
+            do Sys.wait(5);
+        }
+        return;
+    }
+}
