@@ -19,7 +19,7 @@ class Number {
     var Int32 t;
     var Int32 u;
 
-    let BYTES_FOR_FRAC = 2;
+    let BYTES_FOR_FRAC = 1;
 
     let SCALE_FACTOR = Int32.new(256);
     do SCALE_FACTOR.do_mul(SCALE_FACTOR);
@@ -92,6 +92,12 @@ class Number {
     let p1[1] = p2[1];
     let p1[2] = p2[2];
     let p1[3] = p2[3];
+    return;
+  }
+
+  method void set_from_int(int i) {
+    do v.set(i);
+    do v.do_left_shift_bytes(BYTES_FOR_FRAC);
     return;
   }
 

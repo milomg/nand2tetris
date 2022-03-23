@@ -1,8 +1,0 @@
-class I32 {
-    field int low, high;
-    constructor I32 new(int l, int h) {
-        let low = l;
-        let high = h;
-        return this;
-    }
-}

@@ -6,6 +6,10 @@ class Main {
         do Number.initialize();
         do Dot.initialize();
         do Edge.initialize();
+        do Game.initialize();
+
+        // To test this, I ended up comparing visually with 
+        // https://replit.com/@modderalias/SpringPhysics (which I made because it was easier than Jack)
 
         let g = Game.new();
 

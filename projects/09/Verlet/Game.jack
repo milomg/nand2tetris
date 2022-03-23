@@ -7,26 +7,40 @@ class Game {
   field int dotsLength, edgesLength;
   field boolean paused;
 
+  static Number five;
+
   method void main() {
-    do update();
-    // do updateKeys();
-
-    // do Sys.wait(16);
-
     do Screen.clearScreen();
 
+    do drawGround();
     do drawMouse();
+    
+    do drawDotsEdges();
 
-    do Screen.setColor(true);
-    do drawDots();
-
-    do drawEdges();
+    do update();
+    do updateKeys();
+    
     return;
   }
 
-  method void drawEdges() {
+  method void drawGround() {
+    do Screen.setColor(true);
+    do Screen.drawRectangle(0, 127, 511, 255);
+    return;
+  }
+
+  method void drawDotsEdges() {
     var int i;
+    var Dot d;
     var Edge e;
+
+    do Screen.setColor(true);
+    let i = 0;
+    while (i < dotsLength) {
+      let d = dots[i];
+      do d.draw();
+      let i = i + 1;
+    }
 
     let i = 0;
     while (i < edgesLength) {
@@ -34,26 +48,16 @@ class Game {
       do e.draw();
       let i = i + 1;
     }
-    return;
-  }
 
-  method void drawDots() {
-    var int i;
-    var Dot d;
-    let i = 0;
-    while (i < dotsLength) {
-      let d = dots[i];
-      do d.draw();
-      let i = i + 1;
-    }
     return;
   }
 
   method void update() {
-    var int i, j, x, y;
+    var int i;
     var Dot d;
     var Edge e;
 
+    // Loop through all nodes and call update.
     let i = 0;
     while (i < dotsLength) {
       let d = dots[i];
@@ -62,70 +66,89 @@ class Game {
     }
 
 
-    let j = 0;
+    // Loop through all edges and call update.
+    let i = 0;
+    while (i < edgesLength) {
+      let e = edges[i];
+      do e.update();
+      let i = i + 1;
+    }
 
-    while (j < 1) {
-      let i = 0;
-      while (i < edgesLength) {
-        let e = edges[i];
-        do e.update();
-        let i = i + 1;
-      }
-      let j = j + 1;
-    }
-    
-    if (~(currentNode = 0)) {
-      // let x = currentNode.getX();
-      // let y = currentNode.getY();
-      // do currentNode.setX(mx);
-      // do currentNode.setY(my);
-      // do currentNode.getVelX().do_add(mx - x);
-      // do currentNode.getVelY().do_add(my - y);
-    }
     return;
   }
 
   method void updateKeys() {
     var char key;
-    var int i,x,y,x2,y2;
+    var int i, x, y, dist;
+    var Number tmp;
     var Dot d;
 
     let key = Keyboard.keyPressed();
-    if (key = 130) { let mx = mx - 1; }
-    if (key = 132) { let mx = mx + 1; }
-    if (key = 131) { let my = my - 1; }
-    if (key = 133) { let my = my + 1; }
+
+    // Move the mouse based on the current key
+    if (key = 130) { let mx = mx - 5; }
+    if (key = 132) { let mx = mx + 5; }
+    if (key = 131) { let my = my - 5; }
+    if (key = 133) { let my = my + 5; }
+
+    // Constrain the mouse to the screen
+    if (mx < 7) { let mx = 7; }
+    if (mx > (511 - 7)) { let mx = (511 - 7); }
+    if (my < 7) { let my = 7; }
+    if (my > (255 - 7)) { let my = (255 - 7); }
+
+    if (~(currentNode = 0)) {
+      // Set the current node to the mouse position.
+      let tmp = currentNode.getX();
+      do tmp.set_from_int(mx);
+      let tmp = currentNode.getY();
+      do tmp.set_from_int(my);
+
+      // If we're moving the mouse, we also want to give the currentNode velocity.
+      // This allows you to fling a node when you release it.
+      if (key = 130) { let tmp = currentNode.getVelX(); do tmp.do_sub(five); }
+      if (key = 132) { let tmp = currentNode.getVelX(); do tmp.do_add(five); }
+      if (key = 131) { let tmp = currentNode.getVelY(); do tmp.do_sub(five); }
+      if (key = 133) { let tmp = currentNode.getVelY(); do tmp.do_add(five); }
+    }
+
     if (key = 32) {
+      do Output.printString("paused while holding space");
       while (~(key = 0)) { 
         let key = Keyboard.keyPressed();
-      } 
+      }
+      do Output.moveCursor(0,0);
       let holding = ~holding;
 
       if (holding) {
         let i = 0;
         let currentNode = dots[i];
+        let dist = 32767;
         while (i < dotsLength) {
           let d = dots[i];
-          let x = d.getX() - mx;
-          let y = d.getY() - my;
 
-          let x = x * x + y * y;
-          if (x<0) {
+          let tmp = d.getX();
+          let x = tmp.get_int() - mx;
+          let tmp = d.getY();
+          let y = tmp.get_int() - my;
+          let x = (x * x) + (y * y); // Agh, I had a bug with parentheses here.
+          if (x < 0){
             let x = 32767;
           }
-          let x2 = currentNode.getX() - mx;
-          let y2 = currentNode.getY() - my;
-          let x2 = x2 * x2 + y2 * y2;
-          if (x2<0) {
-            let x2 = 32767;
-          }
-          if ((x)<(x2)) {
+
+          if (x<dist) {
             let currentNode = d;
+            let dist = x;
           }
           let i = i + 1;
         }
-        let mx = currentNode.getX();
-        let my = currentNode.getY();
+
+        // When we've selected a new node, move the mouse to the node so we know what we've selected.
+        // (and so that the node doesn't jump miles away when it moves to the mouse)
+        let tmp = currentNode.getX();
+        let mx = tmp.get_int();
+        let tmp = currentNode.getY();
+        let my = tmp.get_int();
         do currentNode.setSelected(true);
       } else {
         do currentNode.setSelected(false);
@@ -144,9 +167,13 @@ class Game {
     return;
   }
 
+  function void initialize() {
+    let five = Number.new(5);
+    return;
+  }
   constructor Game new(){
-    let mx = 256;
-    let my = 128;
+    let mx = 100;
+    let my = 55;
     let holding = false;
     let dots = Array.new(10); // preallocate space for more dots and edges
     let edges = Array.new(10);

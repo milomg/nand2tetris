@@ -291,6 +291,29 @@ class Int32 {
     return this;
   }
 
+  method void set(int i) {
+      var int i_low;
+      var int i_high;
+      var int smear;
+  
+      let allocs = allocs + 1;
+  
+      let i_low = i & 255;
+      let i_high = Int32.arith_rightshift(i, 8) & 255;
+      if (i < 0) {
+        let smear = 255;
+      } else {
+        let smear = 0;
+      }
+  
+      let parts[0] = i_low;
+      let parts[1] = i_high;
+      let parts[2] = smear;
+      let parts[3] = smear;
+  
+      return;
+  }
+
   constructor Int32 new_from_parts(Array p) {
     let allocs = allocs + 1;
 
@@ -309,7 +332,7 @@ class Int32 {
     let i_low = parts[0];
     let i_high = parts[1];
 
-    return Int32.leftshift(i_high, 8) | i_low;
+    return (Int32.leftshift(i_high  & 255, 8) | (i_low & 255));
   }
 
   method void do_add(Int32 other) {
@@ -730,7 +753,7 @@ class Int32 {
 
     let i = 0;
 
-    while (i < 20 & ~(old_guess.cmp(guess) = 0)) {
+    while (i < 5 & ~(old_guess.cmp(guess) = 0)) {
       let inv = clone();
       do inv.do_div(guess);
 
