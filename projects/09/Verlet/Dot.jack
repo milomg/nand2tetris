@@ -1,25 +1,28 @@
 class Dot {
-  field Number x, y, velx, vely;
-  field boolean selected;
+  field Number x, y, velx, vely; // position and velocity
+  field boolean pinned; // are we being held by the mouse?
 
-  static Number one, w, h, m, ground_friction, friction;
+  // w: max x value, 
+  // h: max y value, 
+  // m: min x and y value
+  static Number w, h, m, groundFriction, friction, gravity;
   static int radius;
   function void initialize() {
     var Number tmp;
 
     let radius = 5;
-    let one = Number.new(1);
-    let w = Number.new(511 - radius);
-    let h = Number.new(127 - radius);
-    let m = Number.new(radius);
+    let gravity = Number.new(1); // Gravity is just 1 pixel/second^2
+    let w = Number.new(511 - radius); // I initialize a bunch of constants that I copy in when I need them
+    let h = Number.new(127 - radius); // This is where I set the ground height (127 instead of 255)
+    let m = Number.new(radius); // The minimum x and y values is just the radius
     
-    let ground_friction = Number.new(7);
+    let groundFriction = Number.new(7);
     let tmp = Number.new(10);
-    do ground_friction.do_div(tmp);
+    do groundFriction.do_div(tmp); // Set ground friction to 7/10
 
     let friction = Number.new(8);
     let tmp = Number.new(10);
-    do friction.do_div(tmp);
+    do friction.do_div(tmp); // Set regular friction to be .8 (this is not simplified for faster editing)
 
     return;
   }
@@ -31,11 +34,11 @@ class Dot {
     return this;
   }
 
-  method boolean getSelected() {
-    return selected;
+  method boolean getPinned() {
+    return pinned;
   }
-  method void setSelected(boolean _selected) {
-    let selected = _selected;
+  method void setPinned(boolean _pinned) {
+    let pinned = _pinned;
     return;
   }
 
@@ -54,12 +57,12 @@ class Dot {
   }
 
   method void update() {
-    do vely.do_add(one);
-    if (~selected) {
-      do x.do_add(velx);
+    do vely.do_add(gravity);
+    if (~pinned) {
+      do x.do_add(velx); // Move the dots (when they aren't held by the mouse)
       do y.do_add(vely);
     }
-    do velx.do_mul(friction);
+    do velx.do_mul(friction); // Every timestep we slow down the dots to prevent things from blowing up
     do vely.do_mul(friction);
 
     if (x.cmp(w) > 0) {
@@ -67,8 +70,8 @@ class Dot {
     }
     if (y.cmp(h) > 0) {
       do y.set_from_other(h);
-      do velx.do_mul(ground_friction);
-      do vely.do_mul(ground_friction);
+      do velx.do_mul(groundFriction);
+      do vely.do_mul(groundFriction);
     }
     if (x.cmp(m) < 0) {
       do x.set_from_other(m);
@@ -81,10 +84,7 @@ class Dot {
   }
 
   method void draw() {
-    var int _x, _y;
-    let _x = x.get_int();
-    let _y = y.get_int();
-    do Screen.drawCircle(_x, _y, radius);
+    do Screen.drawCircle(x.get_int(), y.get_int(), radius);
     return;
   }
 }

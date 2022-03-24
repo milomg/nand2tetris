@@ -1,3 +1,4 @@
+// Taken from https://github.com/aquach/from-nand-to-raytracer/blob/main/jack-raytracer/Int32.jack
 class Int32 {
   field Array parts;
 
@@ -24,7 +25,6 @@ class Int32 {
     return;
   }
 
-  // Jack doesn't have these, so we need to reimplement them.
   function int arith_rightshift(int x, int n) {
     var int r;
     var int i;

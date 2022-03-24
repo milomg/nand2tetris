@@ -1,31 +1,90 @@
 class Game {
   field int mx, my; // mouseX, mouseY
-  field boolean holding; // is mouse down (space to toggle)
-  field Dot currentNode; // selected node
+  field boolean holding; // are we moving current dot with mouse (space to toggle)
+  field Dot currentDot; // selected dot
   field Array dots;
   field Array edges;
   field int dotsLength, edgesLength;
+  field int maxEdges, maxDots;
   field boolean paused;
 
   static Number five;
+
+  method void drawMouse() {
+    do Screen.setColor(true);
+    do Screen.drawCircle(mx, my, 7);
+    do Screen.setColor(false);
+    do Screen.drawCircle(mx, my, 6);
+    return;
+  }
+
+  method void drawCurrentDot() {
+    var int x, y;
+    var Number tmp;
+
+    // Draw a circle around the selected dot if it is indpendent of the mouse
+    if ((~(currentDot = null)) & (~holding)) {
+      let tmp = currentDot.getX();
+      let x = tmp.get_int();
+      let tmp = currentDot.getY();
+      let y = tmp.get_int();
+      
+      do Screen.setColor(true);
+      do Screen.drawCircle(x, y, 7);
+      do Screen.setColor(false);
+      do Screen.drawCircle(x, y, 6);
+    }
+    return;
+  }
+
+  function void initialize() {
+    let five = Number.new(5);
+    return;
+  }
+
+  constructor Game new() {
+    let mx = 100; // Position the mouse kinda near an object so that I don't have to move it so far
+    let my = 55;
+    let holding = false;
+    let maxDots = 10;
+    let maxEdges = 10;
+    let dots = Array.new(maxDots); // preallocate space for a few more dots and edges
+    let edges = Array.new(maxEdges);
+    let dotsLength = 4;
+    let edgesLength = 5;
+
+    let dots[0] = Dot.new(50, 50);
+    let dots[1] = Dot.new(121, 50);
+    let dots[2] = Dot.new(50, 100);
+    let dots[3] = Dot.new(100, 120);
+
+    let edges[0] = Edge.new(dots[0], dots[1]);
+    let edges[1] = Edge.new(dots[0], dots[2]);
+    let edges[2] = Edge.new(dots[1], dots[2]);
+    let edges[3] = Edge.new(dots[1], dots[3]);
+    let edges[4] = Edge.new(dots[2], dots[3]);
+
+    let paused = false;
+    return this;
+  }
 
   method void main() {
     do Screen.clearScreen();
 
     do drawGround();
     do drawMouse();
-    
+    do drawCurrentDot();
     do drawDotsEdges();
 
     do update();
-    do updateKeys();
+    do updateKeys(); // update is slow enough that we do that instead of Sys.wait
     
     return;
   }
 
   method void drawGround() {
     do Screen.setColor(true);
-    do Screen.drawRectangle(0, 127, 511, 255);
+    do Screen.drawRectangle(0, 128, 511, 255);
     return;
   }
 
@@ -34,7 +93,9 @@ class Game {
     var Dot d;
     var Edge e;
 
+    // Enable drawing, then loop through all the dots and edges and draw them
     do Screen.setColor(true);
+
     let i = 0;
     while (i < dotsLength) {
       let d = dots[i];
@@ -57,14 +118,13 @@ class Game {
     var Dot d;
     var Edge e;
 
-    // Loop through all nodes and call update.
+    // Loop through all dots and call update.
     let i = 0;
     while (i < dotsLength) {
       let d = dots[i];
       do d.update();
       let i = i + 1;
     }
-
 
     // Loop through all edges and call update.
     let i = 0;
@@ -95,103 +155,133 @@ class Game {
     if (mx < 7) { let mx = 7; }
     if (mx > (511 - 7)) { let mx = (511 - 7); }
     if (my < 7) { let my = 7; }
-    if (my > (255 - 7)) { let my = (255 - 7); }
+    if (my > (127 - 7)) { let my = (127 - 7); }
 
-    if (~(currentNode = 0)) {
-      // Set the current node to the mouse position.
-      let tmp = currentNode.getX();
+    if (holding) {
+      // Set the current dot to the mouse position.
+      let tmp = currentDot.getX();
       do tmp.set_from_int(mx);
-      let tmp = currentNode.getY();
+      let tmp = currentDot.getY();
       do tmp.set_from_int(my);
 
-      // If we're moving the mouse, we also want to give the currentNode velocity.
-      // This allows you to fling a node when you release it.
-      if (key = 130) { let tmp = currentNode.getVelX(); do tmp.do_sub(five); }
-      if (key = 132) { let tmp = currentNode.getVelX(); do tmp.do_add(five); }
-      if (key = 131) { let tmp = currentNode.getVelY(); do tmp.do_sub(five); }
-      if (key = 133) { let tmp = currentNode.getVelY(); do tmp.do_add(five); }
+      // If we're moving the mouse, we also want to give the currentDot velocity.
+      // This allows you to fling a dot when you release it.
+      if (key = 130) { let tmp = currentDot.getVelX(); do tmp.do_sub(five); }
+      if (key = 132) { let tmp = currentDot.getVelX(); do tmp.do_add(five); }
+      if (key = 131) { let tmp = currentDot.getVelY(); do tmp.do_sub(five); }
+      if (key = 133) { let tmp = currentDot.getVelY(); do tmp.do_add(five); }
     }
 
-    if (key = 32) {
-      do Output.printString("paused while holding space");
+    if (key = 78) { // n key
+      do Output.printString("paused while holding n");
       while (~(key = 0)) { 
         let key = Keyboard.keyPressed();
       }
       do Output.moveCursor(0,0);
-      let holding = ~holding;
+      if (holding) {
+        let holding = ~holding; // stop moving the current node with the mouse (but keep it pinned)
+      } else {
+        if (dotsLength < maxDots) {
+          let dots[dotsLength] = Dot.new(mx, my);
+          if (~(currentDot = null) & (edgesLength < maxEdges)) {
+            // Connect the new dot to the currentDot
+            let edges[edgesLength] = Edge.new(currentDot, dots[dotsLength]);
+            let edgesLength = edgesLength + 1;
+            do currentDot.setPinned(false);
+            let currentDot = null;
+          }
+          let dotsLength = dotsLength + 1;
+        }
+      }
+    }
+
+    if (key = 69) { // e key (to add an edge)
+      do Output.printString("paused while holding e");
+      while (~(key = 0)) { 
+        let key = Keyboard.keyPressed();
+      }
+      do Output.moveCursor(0, 0);
+      if (holding) { // the user should first hit space to select a dot
+        let holding = ~holding; // stop moving the current node with the mouse (but keep it pinned)
+      } else {
+        if (~(currentDot = null) & (edgesLength < maxEdges)) { // don't exceed the limit of 10 edges
+          let edges[edgesLength] = Edge.new(currentDot, getNearest()); // add an edge between the current dot and the nearest dot
+          let edgesLength = edgesLength + 1;
+          do currentDot.setPinned(false);
+          let currentDot = null;
+        } else {
+          do Output.printString("select a dot with space before hitting e");
+          do Sys.wait(1000);
+          do Output.moveCursor(0, 0); // move cursor back only after wait to avoid a blank character
+        }
+      }
+    }
+
+    if (key = 140) { // escape key resets
+      let holding = false;
+      if (~(currentDot = null)) {
+        do currentDot.setPinned(false);
+        let currentDot = null;
+      }
+    }
+
+    if (key = 32) { // space key
+      do Output.printString("paused while holding space");
+      while (~(key = 0)) { 
+        let key = Keyboard.keyPressed();
+      } // wait for the user to release the key to avoid double pressing
+      do Output.moveCursor(0, 0); // reset the cursor so the next print is at 0,0
+      
+      let holding = ~holding; // toggle whether we are holding a dot
 
       if (holding) {
-        let i = 0;
-        let currentNode = dots[i];
-        let dist = 32767;
-        while (i < dotsLength) {
-          let d = dots[i];
+        let currentDot = getNearest();
 
-          let tmp = d.getX();
-          let x = tmp.get_int() - mx;
-          let tmp = d.getY();
-          let y = tmp.get_int() - my;
-          let x = (x * x) + (y * y); // Agh, I had a bug with parentheses here.
-          if (x < 0){
-            let x = 32767;
-          }
-
-          if (x<dist) {
-            let currentNode = d;
-            let dist = x;
-          }
-          let i = i + 1;
-        }
-
-        // When we've selected a new node, move the mouse to the node so we know what we've selected.
-        // (and so that the node doesn't jump miles away when it moves to the mouse)
-        let tmp = currentNode.getX();
+        // When we've selected a new dot, move the mouse to the dot so we know what we've selected.
+        // (and so that the dot doesn't jump miles away when it moves to the mouse)
+        let tmp = currentDot.getX();
         let mx = tmp.get_int();
-        let tmp = currentNode.getY();
+        let tmp = currentDot.getY();
         let my = tmp.get_int();
-        do currentNode.setSelected(true);
+        do currentDot.setPinned(true);
       } else {
-        do currentNode.setSelected(false);
-        let currentNode = 0;
+        do currentDot.setPinned(false);
+        let currentDot = null;
       }
     }
 
     return;
   }
 
-  method void drawMouse() {
-    do Screen.setColor(true);
-    do Screen.drawCircle(mx, my, 7);
-    do Screen.setColor(false);
-    do Screen.drawCircle(mx, my, 6);
-    return;
-  }
+  method Dot getNearest() {
+    var int i, x, y, dist;
+    var Number tmp;
+    var Dot d, best;
 
-  function void initialize() {
-    let five = Number.new(5);
-    return;
-  }
-  constructor Game new(){
-    let mx = 100;
-    let my = 55;
-    let holding = false;
-    let dots = Array.new(10); // preallocate space for more dots and edges
-    let edges = Array.new(10);
-    let dotsLength = 4;
-    let edgesLength = 5;
+    let i = 0;
+    let d = dots[i];
+    let dist = 32767; // Start at dist=maxint
+    while (i < dotsLength) {
+      let d = dots[i];
 
-    let dots[0] = Dot.new(50, 50);
-    let dots[1] = Dot.new(121, 50);
-    let dots[2] = Dot.new(50, 100);
-    let dots[3] = Dot.new(100, 120);
+      let tmp = d.getX();
+      let x = tmp.get_int() - mx;
+      let tmp = d.getY();
+      let y = tmp.get_int() - my;
+      // We store the result back in x to fix the out of memory issues
+      let x = (x * x) + (y * y); // Agh, I had a bug with parentheses here.
+      if (x < 0) { // check for overflow
+        let x = 32767; // then just pretend it is very far away
+      }
 
-    let edges[0] = Edge.new(dots[0], dots[1]);
-    let edges[1] = Edge.new(dots[0], dots[2]);
-    let edges[2] = Edge.new(dots[1], dots[2]);
-    let edges[3] = Edge.new(dots[1], dots[3]);
-    let edges[4] = Edge.new(dots[2], dots[3]);
+      // Find the closest dot (one with minimum Pythagorean distance)
+      if (x < dist) {
+        let best = d;
+        let dist = x;
+      }
+      let i = i + 1;
+    }
 
-    let paused = false;
-    return this;
+    return best;
   }
 }

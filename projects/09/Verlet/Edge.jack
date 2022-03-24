@@ -4,19 +4,21 @@ class Edge {
 
   // I'm preallocating stuff up here because allocating in the inner loop feels slow?
   field Number dx, dy;
-  field Number dist;
-  field Number dy2, ld, tmp;
 
-  static Number half;
+  // dist: stores the distance between start and end (also initially computes dx^2)
+  // square: scratch for storing dy^2
+  // ld: stores (length - dist) / dist. This is basically like length - dist (hooke's law), 
+  //    except that we also want to normalize dx and dy (by dividing by dist)
+  field Number dist, ld, square;
+
+  static Number damping;
 
   function void initialize() {
-    var Number tmp;
-    // let tmp = Number.new(50000);
-    let half = Number.new(2);
-    do half.do_mul(half);
-    // do half.do_div(tmp);
+    let damping = Number.new(2); // I don't way to be creating a number in the loop, so I create it here.
+
     return;
   }
+
   constructor Edge new(Dot _start, Dot _end) {
     let start = _start;
     let end = _end;
@@ -24,57 +26,61 @@ class Edge {
     let dx = start.getX();
     let dx = dx.clone();
     do dx.do_sub(end.getX());
-    do dx.do_mul(dx);
+    do dx.do_mul(dx); // Store (startx-endx)^2 in dx
 
     let dy = start.getY();
     let dy = dy.clone();
     do dy.do_sub(end.getY());
-    do dy.do_mul(dy);
+    do dy.do_mul(dy); // Store (starty-endy)^2 in dy (we need this computation below)
 
     let length = dx.clone();
     do length.do_add(dy);
-    // do length.do_sqrt();
+    do length.do_sqrt(); // Pythagoras!
 
-    let dist = length.clone();
-    let dy2 = dy.clone();
-    let ld = length.clone();
+    let dist = Number.new(0); // create some constants that will be filled in later
+    let ld = Number.new(0);
+    let square = Number.new(0);
 
     return this;
   }
 
   method void update() {
-    do dx.set_from_other(end.getX());
+    var Number tmp; // We don't need to dispose because we never allocate this.
+
+    // The set_from_other command is like clone, but into itself instead of a new object
+    do dx.set_from_other(end.getX()); 
     do dx.do_sub(start.getX()); // dx = end.x - start.x
 
     do dy.set_from_other(end.getY());
     do dy.do_sub(start.getY()); // dy = end.y - start.y
 
-    do dy2.set_from_other(dy);
-    do dy2.do_mul(dy); // dy2 = dy * dy
+    do square.set_from_other(dy);
+    do square.do_mul(dy); // dy2 = dy * dy
 
     do dist.set_from_other(dx);
     do dist.do_mul(dx); // dist = dx * dx
-    do dist.do_add(dy2); // dist = dx * dx + dy * dy
+    do dist.do_add(square); // dist = dx * dx + dy * dy
 
-    // We can avoid the sqrt because nobody can tell the difference in accuracy
-    // do dist.do_sqrt(); // dist (current length) = hypot(end.x - start.x, end.y - start.y)
+    // We can sometimes avoid the sqrt because nobody can tell the difference in accuracy but they can feel the perf
+    // However, for the demo I'm leaving it because it prevents some glitches
+    do dist.do_sqrt(); // dist (current length) = hypot(end.x - start.x, end.y - start.y)
     
     // Effectively this is setting ld = (original length - dist) / dist / 2;
     do ld.set_from_other(length);
     do ld.do_sub(dist);
     do ld.do_div(dist);
-    do ld.do_div(half);  // ld here is change in original length as a fraction of dist
+    do ld.do_div(damping);  // ld here is change in original length as a fraction of dist
 
     do dx.do_mul(ld);
     do dy.do_mul(ld);
 
-    if (~start.getSelected()){
-      let tmp = start.getVelX();
+    if (~start.getPinned()){
+      let tmp = start.getVelX(); // I'm only using one variable to use a little less space
       do tmp.do_sub(dx);
       let tmp = start.getVelY();
       do tmp.do_sub(dy);
     }
-    if (~end.getSelected()){
+    if (~end.getPinned()){
       let tmp = end.getVelX();
       do tmp.do_add(dx);
       let tmp = end.getVelY();
@@ -86,7 +92,7 @@ class Edge {
   
   // Draw a line from start to end
   method void draw() {
-    var Number x,y,x2,y2;
+    var Number x, y, x2, y2;
     let x = start.getX();
     let y = start.getY();
     let x2 = end.getX();

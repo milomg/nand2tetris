@@ -1,22 +1,49 @@
 class Main {
-    function void main() {
-        var Game g;
+  function void main() {
+    var Game g;
 
-        do Int32.initialize();
-        do Number.initialize();
-        do Dot.initialize();
-        do Edge.initialize();
-        do Game.initialize();
+    do Int32.initialize();
+    do Number.initialize();
+    do Dot.initialize();
+    do Edge.initialize();
+    do Game.initialize();
 
-        // To test this, I ended up comparing visually with 
-        // https://replit.com/@modderalias/SpringPhysics (which I made because it was easier than Jack)
+    // To test this, I ended up comparing visually with 
+    // https://replit.com/@modderalias/SpringPhysics (which I made because it was easier than Jack)
 
-        let g = Game.new();
+    let g = Game.new();
 
-        while (true) {
-            do g.main();
-        }
+    do Main.intro();
 
-        return;
+    while (true) {
+      do g.main();
     }
+
+    return;
+  }
+
+  function void intro() {
+    var char key;
+    do Output.printString("press space to select (hold until text flashes on screen)");
+    do Output.println();
+    do Output.printString("arrow keys to move the mouse");
+    do Output.println();
+    do Output.printString("press n to create a new node");
+    do Output.println();
+    do Output.printString("press e to create an edge");
+    do Output.println();
+    do Output.printString("press space to begin");
+
+    while (~(key = 32)) {
+      let key = Keyboard.keyPressed();
+    }
+    do Screen.clearScreen();
+    do Output.moveCursor(0, 0);
+    do Output.printString("release space to begin");
+    while (~(key = 0)) {
+      let key = Keyboard.keyPressed();
+    }
+    do Output.moveCursor(0, 0);
+    return;
+  }
 }

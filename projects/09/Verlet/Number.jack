@@ -1,3 +1,4 @@
+// Taken from https://github.com/aquach/from-nand-to-raytracer/blob/main/jack-raytracer/Number.jack
 class Number {
   field Int32 v;
   static int BYTES_FOR_FRAC;
