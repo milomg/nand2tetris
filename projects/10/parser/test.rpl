@@ -1,0 +1,68 @@
+rpl 1.2
+
+import num
+import word
+
+local string = word.dq
+
+alias keyword = "class" / "constructor" / "function" / "method" / "field" / "static" /
+"var" / "int" / "char" / "boolean" / "void" / "true" / "false" / "null" / "this" /
+"let" / "do" / "if" / "else" / "while" / "return"
+
+alias symbol = "{" / "}" / "(" / ")" / "[" / "]" / "." / "," / ";" / "+" / "-" / "*" / "/" / "&" / "|" / "<" / ">" / "=" / "~"
+
+grammar
+    alias subroutineCall = identifier "(" expressionList ")" / identifier "." identifier "(" expressionList ")"
+end
+
+grammar
+    alias term = integerConstant / stringConstant / keyword / identifier / identifier "[" expression "]" / subroutineCall / "(" expression ")" / unaryOp term
+
+    alias op = "+" / "-" / "*" / "/" / "&" / "|" / "<" / ">" / "=" / "~"
+
+    alias unaryOp = "-" / "~"
+
+    alias keywordConstant = "true" / "false" / "null" / "this"
+in
+    alias expression = term (op term)*
+end
+
+grammar
+    alias expressionList = (expression ("," expression)*)?
+end
+
+alias integerConstant = num.int
+
+alias stringConstant = word.dq
+
+alias identifier = [[:alpha:] [_]] [[:alnum:] [_]]*
+
+alias class = "class" ~ identifier "{" (classVarDec / subroutineDec)* "}"
+
+alias classVarDec = ("static" / "field") ~ type ~ identifier ("," ~ identifier)* ";"
+
+alias type = "int" / "char" / "boolean" / identifier
+
+alias subroutineDec = ("constructor" / "function" / "method") ~ ("void" / type) ~ identifier "(" parameterList ")" subroutineBody
+
+alias parameterList = (type ~ identifier ("," type ~ identifier)*)?
+
+alias subroutineBody = "{" ~ varDec* ~ statements "}"
+
+alias varDec = "var" ~ type ~ identifier ("," identifier)* ";"
+
+alias statements = statement*
+
+grammar
+    alias letStatement = "let" ~ identifier ("[" expression "]") ~ "=" ~ expression ";"
+
+    alias ifStatement = "if" "(" expression ")" "{" statements "}" ("else" "{" statements "}")?
+
+    alias whileStatement = "while" "(" expression ")" "{" statements "}"
+
+    alias doStatement = "do" ~ subroutineCall ";"
+
+    alias returnStatement = "return" ~ expression? ";"
+in
+    alias statement = letStatement / ifStatement / whileStatement / doStatement / returnStatement
+end
