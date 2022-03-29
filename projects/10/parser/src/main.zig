@@ -71,6 +71,8 @@ fn analyzeFile(file: std.fs.File) !void {
         var c = contents[i];
         var nextChar = if (i + 1 < contents.len) contents[i + 1] else 0;
         var myToken = contents[tokenStart..(i + 1)];
+
+        // Fast loop to consume block comments
         if (i + 1 < contents.len and c == '/' and contents[i + 1] == '*') {
             i += 2;
             while (i + 1 < contents.len and !(contents[i] == '*' and contents[i + 1] == '/')) {
@@ -80,6 +82,8 @@ fn analyzeFile(file: std.fs.File) !void {
             tokenStart = i + 1;
             continue :outer;
         }
+
+        // strip comments beginning with "//" until end of line
         if (i + 1 < contents.len and c == '/' and contents[i + 1] == '/') {
             i += 2;
             while (i < contents.len and contents[i] != '\n') {
@@ -89,6 +93,7 @@ fn analyzeFile(file: std.fs.File) !void {
             continue :outer;
         }
 
+        // Fast loop to find StringConstant tokens (and avoid the whitespace tokenizer below)
         if (c == '"') {
             i += 1;
             tokenStart = i;
@@ -101,11 +106,14 @@ fn analyzeFile(file: std.fs.File) !void {
 
             continue :outer;
         }
+
+        // Ignore whitespace when matching tokens
         if ((c == ' ') or (c == '\t') or (c == '\n')) {
             tokenStart = i + 1;
             continue :outer;
         }
 
+        // Zig will actually unroll the loop because keywords is constant so this just becomes if checks
         for (keywords) |keyword| {
             if (std.mem.eql(u8, keyword, myToken) and !nonFirstCharOfIdentifier(nextChar)) {
                 try tokens.append(Token{ .type = TokenType.Keyword, .value = myToken });
@@ -114,7 +122,7 @@ fn analyzeFile(file: std.fs.File) !void {
             }
         }
         for (symbols) |symbol| {
-            if (c == symbol) {
+            if (c == symbol) { // we can do direct equality because we are only comparing u8s
                 try tokens.append(Token{ .type = TokenType.Symbol, .value = myToken });
                 tokenStart = i + 1;
                 continue :outer;
