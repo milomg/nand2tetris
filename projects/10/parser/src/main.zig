@@ -1,18 +1,18 @@
 const std = @import("std");
 
 const TokenType = enum {
-    Keyword,
-    Symbol,
-    IntConstant,
-    StringConstant,
-    Identifier,
+    keyword,
+    symbol,
+    integerConstant,
+    stringConstant,
+    identifier,
     pub fn toString(self: TokenType) []const u8 {
         return switch (self) {
-            TokenType.Keyword => "keyword",
-            TokenType.Symbol => "symbol",
-            TokenType.IntConstant => "integerConstant",
-            TokenType.StringConstant => "stringConstant",
-            TokenType.Identifier => "identifier",
+            TokenType.keyword => "keyword",
+            TokenType.symbol => "symbol",
+            TokenType.integerConstant => "integerConstant",
+            TokenType.stringConstant => "stringConstant",
+            TokenType.identifier => "identifier",
         };
     }
 };
@@ -24,41 +24,18 @@ const Token = struct {
 
 const keywords = [_][]const u8{ "class", "constructor", "function", "method", "field", "static", "var", "int", "char", "boolean", "void", "true", "false", "null", "this", "let", "do", "if", "else", "while", "return" };
 
-const symbols = [_]u8{ '{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~' };
-
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
-fn isInt(str: []u8) bool {
-    for (str) |c| {
-        if (c < '0' or c > '9') {
-            return false;
-        }
-    }
-    return true;
-}
-
-fn isIdentifier(str: []u8) bool {
-    for (str) |c, i| {
-        if (i == 0 and c >= '0' and c <= '9') {
-            return false;
-        }
-        if (!nonFirstCharOfIdentifier(c)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-fn nonFirstCharOfIdentifier(r: u8) bool {
-    if ((r < 'a' or r > 'z') and
-        (r < 'A' or r > 'Z') and
-        (r < '0' or r > '9') and
-        r != '_')
-    {
-        return false;
-    }
-    return true;
-}
+const State = enum {
+    start,
+    stringConstant,
+    integerConstant,
+    line_comment,
+    block_comment,
+    identifier,
+    slash,
+    star_in_comment,
+};
 
 fn analyzeFile(file: std.fs.File) !void {
     var contents = try file.readToEndAlloc(gpa.allocator(), std.math.maxInt(usize));
@@ -67,76 +44,86 @@ fn analyzeFile(file: std.fs.File) !void {
 
     var i: usize = 0;
     var tokenStart: usize = 0;
-    outer: while (i < contents.len) : (i += 1) {
+    var state: State = .start;
+
+    while (i < contents.len) : (i += 1) {
         var c = contents[i];
-        var nextChar = if (i + 1 < contents.len) contents[i + 1] else 0;
-        var myToken = contents[tokenStart..(i + 1)];
 
-        // Fast loop to consume block comments
-        if (i + 1 < contents.len and c == '/' and contents[i + 1] == '*') {
-            i += 2;
-            while (i + 1 < contents.len and !(contents[i] == '*' and contents[i + 1] == '/')) {
-                i += 1;
-            }
-            i += 1;
-            tokenStart = i + 1;
-            continue :outer;
-        }
-
-        // strip comments beginning with "//" until end of line
-        if (i + 1 < contents.len and c == '/' and contents[i + 1] == '/') {
-            i += 2;
-            while (i < contents.len and contents[i] != '\n') {
-                i += 1;
-            }
-            tokenStart = i + 1;
-            continue :outer;
-        }
-
-        // Fast loop to find StringConstant tokens (and avoid the whitespace tokenizer below)
-        if (c == '"') {
-            i += 1;
-            tokenStart = i;
-            while (i < contents.len and contents[i] != '"') {
-                i += 1;
-            }
-
-            try tokens.append(Token{ .type = TokenType.StringConstant, .value = contents[tokenStart..i] });
-            tokenStart = i + 1;
-
-            continue :outer;
-        }
-
-        // Ignore whitespace when matching tokens
-        if ((c == ' ') or (c == '\t') or (c == '\n')) {
-            tokenStart = i + 1;
-            continue :outer;
-        }
-
-        // Zig will actually unroll the loop because keywords is constant so this just becomes if checks
-        for (keywords) |keyword| {
-            if (std.mem.eql(u8, keyword, myToken) and !nonFirstCharOfIdentifier(nextChar)) {
-                try tokens.append(Token{ .type = TokenType.Keyword, .value = myToken });
-                tokenStart = i + 1;
-                continue :outer;
-            }
-        }
-        for (symbols) |symbol| {
-            if (c == symbol) { // we can do direct equality because we are only comparing u8s
-                try tokens.append(Token{ .type = TokenType.Symbol, .value = myToken });
-                tokenStart = i + 1;
-                continue :outer;
-            }
-        }
-        if (isIdentifier(myToken) and !nonFirstCharOfIdentifier(nextChar)) {
-            try tokens.append(Token{ .type = TokenType.Identifier, .value = myToken });
-            tokenStart = i + 1;
-            continue :outer;
-        }
-        if (isInt(myToken) and (nextChar < '0' or nextChar > '9')) {
-            try tokens.append(Token{ .type = TokenType.IntConstant, .value = myToken });
-            tokenStart = i + 1;
-            continue :outer;
+        switch (state) {
+            .start => switch (c) {
+                '/' => state = .slash,
+                '0'...'9' => {
+                    tokenStart = i;
+                    state = .integerConstant;
+                },
+                '"' => {
+                    state = .stringConstant;
+                    tokenStart = i + 1;
+                },
+                '\n', ' ', '\t' => {},
+                '{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '&', '|', '<', '>', '=', '~' => {
+                    try tokens.append(Token{ .type = TokenType.symbol, .value = contents[i..(i + 1)] });
+                },
+                'a'...'z', 'A'...'Z', '_' => {
+                    tokenStart = i;
+                    state = .identifier;
+                },
+                else => {},
+            },
+            .slash => switch (c) {
+                '/' => state = .line_comment,
+                '*' => state = .block_comment,
+                else => {
+                    try tokens.append(Token{ .type = TokenType.symbol, .value = "/" });
+                    i -= 1;
+                    state = .start;
+                },
+            },
+            .line_comment => switch (c) {
+                '\n' => state = .start,
+                else => {},
+            },
+            .block_comment => switch (c) {
+                '*' => state = .star_in_comment,
+                else => {},
+            },
+            .star_in_comment => switch (c) {
+                '/' => state = .start,
+                else => state = .block_comment,
+            },
+            .integerConstant => switch (c) {
+                '0'...'9' => {},
+                else => {
+                    var myToken = contents[tokenStart..i];
+                    try tokens.append(Token{ .type = TokenType.integerConstant, .value = myToken });
+                    i -= 1;
+                    state = .start;
+                },
+            },
+            .stringConstant => switch (c) {
+                '"' => {
+                    var myToken = contents[tokenStart..i];
+                    try tokens.append(Token{ .type = TokenType.stringConstant, .value = myToken });
+                    state = .start;
+                },
+                else => {},
+            },
+            .identifier => switch (c) {
+                'a'...'z', 'A'...'Z', '0'...'9', '_' => {},
+                else => {
+                    var myToken = contents[tokenStart..i];
+                    for (keywords) |keyword| {
+                        if (std.mem.eql(u8, keyword, myToken)) {
+                            try tokens.append(Token{ .type = TokenType.keyword, .value = myToken });
+                            break;
+                        }
+                    } else {
+                        try tokens.append(Token{ .type = TokenType.identifier, .value = myToken });
+                    }
+                    i -= 1;
+                    state = .start;
+                },
+            },
         }
     }
 
