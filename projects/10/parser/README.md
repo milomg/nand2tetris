@@ -5,7 +5,5 @@ I was playing around with the rosie pattern language but I couldn't get it to co
 For the zig part of the program
 
 1. install zig (`brew install zig`)
-2. `zig build run`
+2. `zig build run -- ../Square/Main.jack`
 
-
-Eventually maybe running `zig build test` will do something

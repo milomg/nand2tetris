@@ -57,8 +57,8 @@ fn analyzeFile(file: std.fs.File) !void {
                     state = .integerConstant;
                 },
                 '"' => {
-                    state = .stringConstant;
                     tokenStart = i + 1;
+                    state = .stringConstant;
                 },
                 '\n', ' ', '\t' => {},
                 '{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '&', '|', '<', '>', '=', '~' => {
@@ -135,7 +135,12 @@ fn analyzeFile(file: std.fs.File) !void {
 }
 
 pub fn main() anyerror!void {
-    var file = try std.fs.cwd().openFile("../Square/Main.jack", .{});
+    const allocator = gpa.allocator();
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+
+    const fileName = args[1];
+    var file = try std.fs.cwd().openFile(fileName, .{});
     defer file.close();
 
     try analyzeFile(file);
