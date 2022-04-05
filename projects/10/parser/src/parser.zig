@@ -27,7 +27,7 @@ pub const Parser = struct {
     fn parseClassVarDec(self: *Parser) void {
         self.writeTag("classVarDec");
         defer self.writeTagEnd("classVarDec");
-        self.eatType(.keyword); // ('static' | 'field')
+        self.eatList(&.{"static", "field"});
         self.writeToken(); // type
         self.eatType(.identifier); // varName
         while (self.tryEatToken(.symbol, ",")) {
@@ -38,7 +38,7 @@ pub const Parser = struct {
     fn parseSubroutineDec(self: *Parser) void {
         self.writeTag("subroutineDec");
         defer self.writeTagEnd("subroutineDec");
-        self.eatType(.keyword); // ('constructor' | 'function' | 'method')
+        self.eatList(&.{"constructor", "function", "method"});
         self.writeToken(); // type
         self.eatType(.identifier); // subroutineName
         self.eat(.symbol, "(");
@@ -247,6 +247,12 @@ pub const Parser = struct {
         }
         return false;
     }
+    fn eatList(self: *Parser, tokenList: []const []const u8) void {
+        if (!self.peekTokenList(tokenList)) {
+            std.debug.panic("Expected token of value {s} but got token {s}\n", .{ tokenList, self.currentToken.value });
+        }
+        self.writeToken();
+    }
     fn eat(self: *Parser, tokenType: TokenType, value: []const u8) void {
         if (!self.peekToken(tokenType, value)) {
             std.debug.panic("Expected token of type {s} with value {s} but got {s} with value {s}\n", .{ tokenType, value, self.currentToken.type, self.currentToken.value });
@@ -259,35 +265,66 @@ pub const Parser = struct {
         }
         self.writeToken();
     }
-    fn writeToken(self: *Parser) void {
-        const token = self.currentToken;
+    fn write_xml(self: *Parser) !void {
+        var token = self.currentToken;
+        var tokenType = token.type.toString();
+        try self.writer.writeAll("<");
+        try self.writer.writeAll(tokenType);
+        try self.writer.writeAll("> ");
+
+        // Tiny tokenizer to do string replacement without any allocation
+        var trailing: usize = 0;
         var i: usize = 0;
-        while (i < self.indentation) : (i += 1) {
-            self.writer.print("  ", .{}) catch return;
+        while (i < token.value.len) : (i += 1) {
+            switch (token.value[i]) {
+                '&' => {
+                    try self.writer.writeAll(token.value[trailing..i]);
+                    try self.writer.writeAll("&amp;");
+                    trailing = i + 1;
+                },
+                '<' => {
+                    try self.writer.writeAll(token.value[trailing..i]);
+                    try self.writer.writeAll("&lt;");
+                    trailing = i + 1;
+                },
+                '>' => {
+                    try self.writer.writeAll(token.value[trailing..i]);
+                    try self.writer.writeAll("&gt;");
+                    trailing = i + 1;
+                },
+                '"' => {
+                    try self.writer.writeAll(token.value[trailing..i]);
+                    try self.writer.writeAll("&quot;");
+                    trailing = i + 1;
+                },
+                else => {}
+            }
         }
-        self.writer.print("<{0s}> {1s} </{0s}>\n", .{ token.type.toString(), token.value }) catch return;
+        try self.writer.writeAll(token.value[trailing..]);
+
+        try self.writer.writeAll(" </");
+        try self.writer.writeAll(tokenType);
+        try self.writer.writeAll(">\n");
+    }
+    fn writeToken(self: *Parser) void {
+        self.writer.writeByteNTimes(' ', self.indentation * 2) catch return;
+        self.write_xml() catch return;
         self.currentToken = self.tokens.next() orelse return;
     }
     fn writeTag(self: *Parser, tag: []const u8) void {
-        var i: usize = 0;
-        while (i < self.indentation) : (i += 1) {
-            self.writer.print("  ", .{}) catch return;
-        }
+        self.writer.writeByteNTimes(' ', self.indentation * 2) catch return;
         self.writer.print("<{s}>\n", .{tag}) catch return;
         self.indentation += 1;
     }
     fn writeTagEnd(self: *Parser, tag: []const u8) void {
         self.indentation -= 1;
-        var i: usize = 0;
-        while (i < self.indentation) : (i += 1) {
-            self.writer.print("  ", .{}) catch return;
-        }
+        self.writer.writeByteNTimes(' ', self.indentation * 2) catch return;
         self.writer.print("</{s}>\n", .{tag}) catch return;
     }
     fn printTokens(self: *Parser) void {
         self.writeTag("tokens");
         defer self.writeTagEnd("tokens");
-        while (self.tokens.index < self.tokens.contents.len) {
+        while (!self.tokens.is_eof()) {
             self.writeToken();
         }
     }
