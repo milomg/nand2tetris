@@ -95,6 +95,10 @@ pub const Tokenizer = struct {
                     '0'...'9' => {},
                     else => {
                         var myToken = self.contents[tokenStart..self.index];
+                        // u15 is exactly the size of Jack's integer constants, and if it overflows, throw a parser error
+                        _ = std.fmt.parseInt(u15, myToken, 10) catch {
+                            std.debug.panic("Integer constant out of range: {s}", .{myToken});
+                        };
                         return Token{ .type = .integerConstant, .value = myToken };
                     },
                 },

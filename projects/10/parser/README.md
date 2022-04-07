@@ -1,9 +1,20 @@
 # Compiler Part 1
 
-I was playing around with the rosie pattern language but I couldn't get it to compile (I would love to see this working though).
+1. install zig: `brew install zig --HEAD`
+2. Check that `zig version` prints 0.10.0-dev.1645+25d4c5df7
+3. `zig build run -- ../Square/Main.jack`
 
-For the zig part of the program
 
-1. install zig (`brew install zig`)
-2. `zig build run -- ../Square/Main.jack`
+## Running the whole folder
 
+zig build run -- ../ArrayTest/
+zig build run -- ../ExpressionLessSquare/
+zig build run -- ../Square/
+
+sdiff -s -b ../ArrayTest/Main.xml ../ArrayTest/MainMine.xml
+sdiff -s -b ../ExpressionLessSquare/Main.xml ../ExpressionLessSquare/MainMine.xml
+sdiff -s -b ../ExpressionLessSquare/Square.xml ../ExpressionLessSquare/SquareMine.xml
+sdiff -s -b ../ExpressionLessSquare/SquareGame.xml ../ExpressionLessSquare/SquareGameMine.xml
+sdiff -s -b ../Square/Main.xml ../Square/MainMine.xml
+sdiff -s -b ../Square/Square.xml ../Square/SquareMine.xml
+sdiff -s -b ../Square/SquareGame.xml ../Square/SquareGameMine.xml

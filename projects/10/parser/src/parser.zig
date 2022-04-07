@@ -9,6 +9,8 @@ pub const Parser = struct {
     currentToken: Token,
     indentation: usize,
     writer: std.fs.File.Writer,
+
+    // 'class' className '{' classVarDec* subroutineDec* '}' 
     pub fn parseClass(self: *Parser) void {
         self.writeTag("class");
         defer self.writeTagEnd("class");
@@ -24,6 +26,7 @@ pub const Parser = struct {
         self.eat(.symbol, "}");
     }
 
+    // ('static' | 'field' ) type varName (',' varName)* ';'
     fn parseClassVarDec(self: *Parser) void {
         self.writeTag("classVarDec");
         defer self.writeTagEnd("classVarDec");
@@ -35,6 +38,8 @@ pub const Parser = struct {
         }
         self.eat(.symbol, ";");
     }
+    
+    // ('constructor' | 'function' | 'method') ('void' | type) subroutineName '('parameterList ')' subroutineBody
     fn parseSubroutineDec(self: *Parser) void {
         self.writeTag("subroutineDec");
         defer self.writeTagEnd("subroutineDec");
@@ -46,6 +51,8 @@ pub const Parser = struct {
         self.eat(.symbol, ")");
         self.parseSubroutineBody();
     }
+
+    // ( (type varName) (',' type varName)*)? 
     fn parseParameterList(self: *Parser) void {
         self.writeTag("parameterList");
         defer self.writeTagEnd("parameterList");
@@ -59,6 +66,8 @@ pub const Parser = struct {
             self.eatType(.identifier); // varName
         }
     }
+
+    // '{' varDec* statements '}' 
     fn parseSubroutineBody(self: *Parser) void {
         self.writeTag("subroutineBody");
         defer self.writeTagEnd("subroutineBody");
@@ -69,6 +78,8 @@ pub const Parser = struct {
         self.parseStatements();
         self.eat(.symbol, "}");
     }
+
+    // 'var' type varName (',' varName)* ';
     fn parseVarDec(self: *Parser) void {
         self.writeTag("varDec");
         defer self.writeTagEnd("varDec");
@@ -80,6 +91,8 @@ pub const Parser = struct {
         }
         self.eat(.symbol, ";");
     }
+
+    // letStatement | ifStatement | whileStatement | doStatement | returnStatement
     fn parseStatements(self: *Parser) void {
         self.writeTag("statements");
         defer self.writeTagEnd("statements");
@@ -97,6 +110,8 @@ pub const Parser = struct {
             }
         }
     }
+
+    // 'let' varName ('[' expression ']')? '=' expression ';' 
     fn parseLet(self: *Parser) void {
         self.writeTag("letStatement");
         defer self.writeTagEnd("letStatement");
@@ -110,6 +125,8 @@ pub const Parser = struct {
         self.parseExpression();
         self.eat(.symbol, ";");
     }
+
+    // 'if' '(' expression ')' '{' statements '}' ( 'else' '{' statements '}' )?
     fn parseIf(self: *Parser) void {
         self.writeTag("ifStatement");
         defer self.writeTagEnd("ifStatement");
@@ -126,6 +143,8 @@ pub const Parser = struct {
             self.eat(.symbol, "}");
         }
     }
+
+    // 'while' '(' expression ')' '{' statements '}' 
     fn parseWhile(self: *Parser) void {
         self.writeTag("whileStatement");
         defer self.writeTagEnd("whileStatement");
@@ -137,6 +156,8 @@ pub const Parser = struct {
         self.parseStatements();
         self.eat(.symbol, "}");
     }
+
+    // 'do' subroutineCall ';'
     fn parseDo(self: *Parser) void {
         self.writeTag("doStatement");
         defer self.writeTagEnd("doStatement");
@@ -144,6 +165,8 @@ pub const Parser = struct {
         self.parseSubroutineCall();
         self.eat(.symbol, ";");
     }
+
+    // subroutineName '(' expressionList ')' | ( className | varName) '.' subroutineName '(' expressionList ')'
     fn parseSubroutineCall(self: *Parser) void {
         self.eatType(.identifier); // subroutineName
         if (self.tryEatToken(.symbol, "(")) {
@@ -156,6 +179,8 @@ pub const Parser = struct {
             self.eat(.symbol, ")");
         }
     }
+
+    // 'return' expression? ';'
     fn parseReturn(self: *Parser) void {
         self.writeTag("returnStatement");
         defer self.writeTagEnd("returnStatement");
@@ -165,6 +190,8 @@ pub const Parser = struct {
         }
         self.eat(.symbol, ";");
     }
+
+    // term (op term)*
     fn parseExpression(self: *Parser) void {
         self.writeTag("expression");
         defer self.writeTagEnd("expression");
@@ -173,15 +200,17 @@ pub const Parser = struct {
             self.parseTerm();
         }
     }
+    
+    // integerConstant | stringConstant | keywordConstant | varName | varName '[' expression ']' | subroutineCall | '(' expression ')' | unaryOp term
     fn parseTerm(self: *Parser) void {
         self.writeTag("term");
         defer self.writeTagEnd("term");
         if (self.tryEatToken(.symbol, "(")) {
             self.parseExpression();
             self.eat(.symbol, ")");
-        } else if (self.tryEatToken(.symbol, "-") or self.tryEatToken(.symbol, "~")) {
+        } else if (self.tryEatToken(.symbol, "-") or self.tryEatToken(.symbol, "~")) { // unaryOp
             self.parseTerm();
-        } else if (self.peekTokenType(.keyword) or self.peekTokenType(.stringConstant) or self.peekTokenType(.integerConstant)) {
+        } else if (self.peekKeywordConstant() or self.peekTokenType(.stringConstant) or self.peekTokenType(.integerConstant)) {
             self.writeToken(); // keywordConstant | stringConstant | integerConstant
         } else if (self.peekTokenType(.identifier)) {
             self.eatType(.identifier); // identifier
@@ -203,6 +232,7 @@ pub const Parser = struct {
         }
     }
 
+    // (expression (',' expression)* )?
     fn parseExpressionList(self: *Parser) void {
         self.writeTag("expressionList");
         defer self.writeTagEnd("expressionList");
@@ -215,6 +245,12 @@ pub const Parser = struct {
         }
     }
 
+    // 'true' | 'false' | 'null' | 'this'
+    fn peekKeywordConstant(self: *Parser) bool {
+        return self.peekTokenType(.keyword) and self.peekTokenList(&.{"true", "false", "null", "this"});
+    }
+
+    // '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '=' 
     fn tryEatOp(self: *Parser) bool {
         var isOp = self.peekTokenType(.symbol) and (self.peekTokenList(&.{ "+", "-", "*", "/", "&", "|", "<", ">", "=" }));
         if (isOp) {
@@ -223,6 +259,7 @@ pub const Parser = struct {
         return isOp;
     }
 
+    // If the token exists, return true and eat it, else return false
     fn tryEatToken(self: *Parser, tokenType: TokenType, value: []const u8) bool {
         var isValid = self.peekToken(tokenType, value);
         if (isValid) {
@@ -230,6 +267,8 @@ pub const Parser = struct {
         }
         return isValid;
     }
+
+    // Check information about the current token
     fn peekToken(self: *Parser, tokenType: TokenType, value: []const u8) bool {
         return self.peekTokenType(tokenType) and self.peekTokenValue(value);
     }
@@ -239,6 +278,8 @@ pub const Parser = struct {
     fn peekTokenValue(self: *Parser, value: []const u8) bool {
         return std.mem.eql(u8, self.currentToken.value, value);
     }
+
+    // Check if the current token has a value that is part of the tokenList
     fn peekTokenList(self: *Parser, tokenList: []const []const u8) bool {
         for (tokenList) |token| {
             if (self.peekTokenValue(token)) {
@@ -247,6 +288,8 @@ pub const Parser = struct {
         }
         return false;
     }
+
+    // These eat functions are just peek and then writeToken or error
     fn eatList(self: *Parser, tokenList: []const []const u8) void {
         if (!self.peekTokenList(tokenList)) {
             std.debug.panic("Expected token of value {s} but got token {s}\n", .{ tokenList, self.currentToken.value });
@@ -265,6 +308,10 @@ pub const Parser = struct {
         }
         self.writeToken();
     }
+
+    // Zig has this "awesome" feature that allocations are explicit, which makes all string handling painful
+    // However, writing to a file in chunks is still pretty easy, so I implement a mini tokenizer that splits on 
+    // things to escape in XML. Internally, the self.writer.print will compile into this
     fn write_xml(self: *Parser) !void {
         var token = self.currentToken;
         var tokenType = token.type.toString();
@@ -272,7 +319,7 @@ pub const Parser = struct {
         try self.writer.writeAll(tokenType);
         try self.writer.writeAll("> ");
 
-        // Tiny tokenizer to do string replacement without any allocation
+        // Tiny tokenizer to do string replacement without any allocation (by writing directly to an output file)
         var trailing: usize = 0;
         var i: usize = 0;
         while (i < token.value.len) : (i += 1) {
@@ -321,6 +368,8 @@ pub const Parser = struct {
         self.writer.writeByteNTimes(' ', self.indentation * 2) catch return;
         self.writer.print("</{s}>\n", .{tag}) catch return;
     }
+
+    // Used to test the tokenizer
     fn printTokens(self: *Parser) void {
         self.writeTag("tokens");
         defer self.writeTagEnd("tokens");
@@ -330,9 +379,11 @@ pub const Parser = struct {
     }
 };
 
+// zig build test
 test "Parser.tryEatOp" {
     var tokens = Tokenizer{ .contents = "", .index = 0 };
     var token = Token{ .type = .symbol, .value = "+" };
+    // Neat fact, you can pass in a stdout writer instead of a file writer (also there is something called an arraylist writer)
     var x = Parser{ .tokens = tokens, .currentToken = token, .indentation = 0, .writer = std.io.getStdErr().writer() };
     try std.testing.expect(x.tryEatOp());
 }

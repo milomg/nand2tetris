@@ -15,20 +15,24 @@ fn run_file(folder: std.fs.Dir, fileName: []const u8) !void {
     var contents = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
     defer allocator.free(contents);
 
-    // Create a file with "MM.xml" appended to the name (and .jack stripped).
-    var outFile = try allocator.alloc(u8, fileName.len + 1);
+    // Create a file with "Mine.xml" appended to the name (and .jack stripped).
+    var outFile = try allocator.alloc(u8, fileName.len + 3);
     defer allocator.free(outFile);
     std.mem.copy(u8, outFile, fileName);
-    std.mem.copy(u8, outFile[(fileName.len - 5) .. fileName.len + 1], "MM.xml");
+    std.mem.copy(u8, outFile[(fileName.len - 5) .. fileName.len + 3], "Mine.xml");
     var output = try folder.createFile(outFile, .{});
 
+    // Build the tokenizer, and pass that structure to the parser
     var tokens = Tokenizer{ .contents = contents, .index = 0 };
+    // We start with the currentToken being non-null
     var firstToken = tokens.next() orelse return;
     var myParser = Parser{ .tokens = tokens, .currentToken = firstToken, .indentation = 0, .writer = output.writer() };
+    // If you want to tokenize, just do myParser.printTokens();
     myParser.parseClass();
 }
 
-pub fn main() anyerror!void {
+// The ! means that this function is allowed to error.
+pub fn main() !void {
     // Check that we've deallocated evertyhing.
     defer std.debug.assert(!gpa.deinit());
 
