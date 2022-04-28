@@ -1,12 +1,12 @@
 const std = @import("std");
 
 const tokenizer = @import("./tokenizer.zig");
-const parser = @import("./parser.zig");
-const symbols = @import("./symbol.zig");
+const compiler = @import("./compiler.zig");
+const scope = @import("./scope.zig");
 const Tokenizer = tokenizer.Tokenizer;
 const Token = tokenizer.Token;
-const Parser = parser.Parser;
-const Scope = symbols.Scope;
+const Parser = compiler.Compiler;
+const Scope = scope.Scope;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
@@ -30,7 +30,7 @@ fn run_file(folder: std.fs.Dir, fileName: []const u8) !void {
     var myParser = try Parser.init(&tokens, output.writer(), allocator);
     defer myParser.deinit();
     // If you want to tokenize, just do myParser.printTokens();
-    myParser.parseClass();
+    myParser.compileClass();
 }
 
 // The ! means that this function is allowed to error.

@@ -22,7 +22,7 @@ pub const Symbol = struct {
 
 const SymbolList = std.ArrayList(Symbol);
 
-const kindsLen = @typeInfo(Kinds).Enum.fields.len;
+const kindsLen = @typeInfo(Kinds).Enum.fields.len; // otherwise known as 4
 
 const SymbolReturn = struct {
     symbol: Symbol,
