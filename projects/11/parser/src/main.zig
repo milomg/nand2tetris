@@ -18,16 +18,17 @@ fn run_file(folder: std.fs.Dir, fileName: []const u8) !void {
     defer allocator.free(contents);
 
     // Create a file with "Mine.xml" appended to the name (and .jack stripped).
-    var outFile = try allocator.alloc(u8, fileName.len + 3);
+    var outFile = try allocator.alloc(u8, fileName.len - 2);
     defer allocator.free(outFile);
-    std.mem.copy(u8, outFile, fileName);
-    std.mem.copy(u8, outFile[(fileName.len - 5) .. fileName.len + 3], "Mine.xml");
+    std.mem.copy(u8, outFile, fileName[0 .. fileName.len - 2]);
+    std.mem.copy(u8, outFile[(fileName.len - 5) .. fileName.len - 2], ".vm");
     var output = try folder.createFile(outFile, .{});
 
     // Build the tokenizer, and pass that structure to the parser
     var tokens = Tokenizer{ .contents = contents, .index = 0 };
     // We start with the currentToken being non-null
     var myParser = try Parser.init(&tokens, output.writer(), allocator);
+    defer myParser.deinit();
     // If you want to tokenize, just do myParser.printTokens();
     myParser.parseClass();
 }
