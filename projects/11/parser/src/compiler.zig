@@ -36,8 +36,7 @@ pub const Compiler = struct {
     // 'class' className '{' classVarDec* subroutineDec* '}'
     pub fn compileClass(self: *Compiler) void {
         self.eat(.keyword, "class");
-        self.class = self.currentToken.value;
-        self.eatType(.identifier); // className
+        self.class = self.eatType(.identifier); // className
         self.eat(.symbol, "{");
         while (self.peekTokenList(&.{ "static", "field" })) {
             self.compileClassVarDec();
@@ -45,22 +44,22 @@ pub const Compiler = struct {
         while (self.peekTokenList(&.{ "constructor", "function", "method" })) {
             self.compileSubroutineDec();
         }
-        self.eat(.symbol, "}");
+        if (!self.peekToken(.symbol, "}")) {
+            std.debug.panic("Expected token `}}` but got {s} with value {s}\n", .{ self.currentToken.type, self.currentToken.value });
+        }
     }
 
     // ('static' | 'field' ) type varName (',' varName)* ';'
     fn compileClassVarDec(self: *Compiler) void {
-        var x: scope.Kinds = if (self.peekTokenValue("static")) .static else .field;
+        var x: scope.Kinds = if (self.peekToken(.keyword, "static")) .static else .field;
         self.eatList(&.{ "static", "field" });
         var symbolType = self.currentToken.value;
         self.nextToken(); // type
-        var symbolName = self.currentToken.value;
+        var symbolName = self.eatType(.identifier); // varName
         self.scope.add(x, symbolType, symbolName);
-        self.eatType(.identifier); // varName
         while (self.tryEatToken(.symbol, ",")) {
-            symbolName = self.currentToken.value;
+            symbolName = self.eatType(.identifier); // varName
             self.scope.add(x, symbolType, symbolName);
-            self.eatType(.identifier); // varName
         }
         self.eat(.symbol, ";");
     }
@@ -69,15 +68,14 @@ pub const Compiler = struct {
     fn compileSubroutineDec(self: *Compiler) void {
         defer self.popScope();
 
-        var isMethod = self.peekTokenValue("method");
-        var isConstructor = self.peekTokenValue("constructor");
+        var isMethod = self.peekToken(.keyword, "method");
+        var isConstructor = self.peekToken(.keyword, "constructor");
         self.eatList(&.{ "constructor", "function", "method" });
         self.nextToken(); // type
-        var fname = self.currentToken.value;
-        self.eatType(.identifier); // subroutineName
+        var fname = self.eatType(.identifier); // subroutineName
         self.eat(.symbol, "(");
         if (isMethod) {
-            self.scope.add(.argument, "this", "this");
+            self.scope.add(.argument, self.class, "this");
         }
         self.compileParameterList();
         self.eat(.symbol, ")");
@@ -109,15 +107,13 @@ pub const Compiler = struct {
         }
         var symbolType = self.currentToken.value;
         self.nextToken(); // type
-        var symbolName = self.currentToken.value;
+        var symbolName = self.eatType(.identifier); // varName
         self.scope.add(.argument, symbolType, symbolName);
-        self.eatType(.identifier); // varName
         while (self.tryEatToken(.symbol, ",")) {
             symbolType = self.currentToken.value;
             self.nextToken(); // type
-            symbolName = self.currentToken.value;
+            symbolName = self.eatType(.identifier); // varName
             self.scope.add(.argument, symbolType, symbolName);
-            self.eatType(.identifier); // varName
         }
     }
 
@@ -133,12 +129,10 @@ pub const Compiler = struct {
         self.eat(.keyword, "var");
         var symbolType = self.currentToken.value;
         self.nextToken(); // type
-        var symbolName = self.currentToken.value;
+        var symbolName = self.eatType(.identifier); // varName
         self.scope.add(.local, symbolType, symbolName);
-        self.eatType(.identifier); // varName
         while (self.tryEatToken(.symbol, ",")) {
-            symbolName = self.currentToken.value;
-            self.eatType(.identifier); // varName
+            symbolName = self.eatType(.identifier); // varName
             self.scope.add(.local, symbolType, symbolName);
             count += 1;
         }
@@ -166,10 +160,9 @@ pub const Compiler = struct {
     // 'let' varName ('[' expression ']')? '=' expression ';'
     fn compileLet(self: *Compiler) void {
         self.eat(.keyword, "let");
-        var symbolName = self.currentToken.value;
-        self.eatType(.identifier); // varName
+        var symbolName = self.eatType(.identifier); // varName
         if (self.tryEatToken(.symbol, "[")) {
-            var symbol = self.scope.lookup(symbolName) orelse return;
+            var symbol = self.scope.lookup(symbolName) orelse std.debug.panic("Symbol `{s}` not found", .{symbolName});
             self.compileExpression();
             self.writer.print("push {s} {}\n", .{ symbol.kind.toString(), symbol.index }) catch return;
             self.writer.print("add\n", .{}) catch return;
@@ -195,7 +188,6 @@ pub const Compiler = struct {
         self.eat(.symbol, "(");
         self.compileExpression();
         self.eat(.symbol, ")");
-        // self.writer.print("not\n", .{}) catch return;
         var labelIfTrue = self.getLabel();
         var labelIfFalse = self.getLabel();
 
@@ -247,16 +239,14 @@ pub const Compiler = struct {
 
     // subroutineName '(' expressionList ')' | ( className | varName) '.' subroutineName '(' expressionList ')'
     fn compileSubroutineCall(self: *Compiler) void {
-        var name = self.currentToken.value;
-        self.eatType(.identifier); // subroutineName
+        var name = self.eatType(.identifier); // subroutineName
         if (self.tryEatToken(.symbol, "(")) {
             self.writer.print("push pointer 0\n", .{}) catch return;
             var numberOfExpressions = self.compileExpressionList();
             self.eat(.symbol, ")");
             self.writer.print("call {s}.{s} {}", .{ self.class, name, numberOfExpressions + 1 }) catch return;
         } else if (self.tryEatToken(.symbol, ".")) {
-            var subroutineName = self.currentToken.value;
-            self.eatType(.identifier); // subroutineName
+            var subroutineName = self.eatType(.identifier); // subroutineName
             self.eat(.symbol, "(");
             var numberOfExpressions: u32 = 0;
             if (self.scope.lookup(name)) |symbol| {
@@ -326,21 +316,17 @@ pub const Compiler = struct {
                 self.writer.print("call String.appendChar 2\n", .{}) catch return;
             }
             self.nextToken();
-        } else if (self.peekKeywordConstant()) {
-            if (self.peekTokenValue("true")) {
-                self.writer.print("push constant 0\n", .{}) catch return;
-                self.writer.print("not\n", .{}) catch return;
-            } else if (self.peekTokenValue("false")) {
-                self.writer.print("push constant 0\n", .{}) catch return;
-            } else if (self.peekTokenValue("null")) {
-                self.writer.print("push constant 0\n", .{}) catch return;
-            } else if (self.peekTokenValue("this")) {
-                self.writer.print("push pointer 0\n", .{}) catch return;
-            }
-            self.nextToken();
+        } else if (self.tryEatToken(.keyword, "true")) {
+            self.writer.print("push constant 0\n", .{}) catch return;
+            self.writer.print("not\n", .{}) catch return;
+        } else if (self.tryEatToken(.keyword, "false")) {
+            self.writer.print("push constant 0\n", .{}) catch return;
+        } else if (self.tryEatToken(.keyword, "null")) {
+            self.writer.print("push constant 0\n", .{}) catch return;
+        } else if (self.tryEatToken(.keyword, "this")) {
+            self.writer.print("push pointer 0\n", .{}) catch return;
         } else if (self.peekTokenType(.identifier)) {
-            var name = self.currentToken.value;
-            self.eatType(.identifier);
+            var name = self.eatType(.identifier);
             if (self.tryEatToken(.symbol, "[")) {
                 var x = self.scope.lookup(name) orelse return;
                 self.writer.print("push {s} {}\n", .{ x.kind.toString(), x.index }) catch return;
@@ -350,9 +336,8 @@ pub const Compiler = struct {
                 self.writer.print("pop pointer 1\n", .{}) catch return;
                 self.writer.print("push that 0\n", .{}) catch return;
             } else if (self.tryEatToken(.symbol, ".")) {
-                var subName = self.currentToken.value;
-                self.eatType(.identifier);
-                self.eat(.symbol, "("); // TODO: this used to be an if, is it still ok?
+                var subName = self.eatType(.identifier);
+                self.eat(.symbol, "(");
                 var numberOfExpressions = self.compileExpressionList();
                 self.eat(.symbol, ")");
                 if (self.scope.lookup(name)) |symbol| {
@@ -367,7 +352,7 @@ pub const Compiler = struct {
                 self.writer.print("push pointer 0\n", .{}) catch return;
                 self.writer.print("call {s}.{s} {}\n", .{ self.class, name, numberOfExpressions + 1 }) catch return;
             } else {
-                var x = self.scope.lookup(name) orelse return;
+                var x = self.scope.lookup(name) orelse std.debug.panic("Symbol `{s}` not found", .{name});
                 self.writer.print("push {s} {}\n", .{ x.kind.toString(), x.index }) catch return;
             }
         } else {
@@ -389,15 +374,9 @@ pub const Compiler = struct {
         return i;
     }
 
-    // 'true' | 'false' | 'null' | 'this'
-    fn peekKeywordConstant(self: *Compiler) bool {
-        return self.peekTokenType(.keyword) and self.peekTokenList(&.{ "true", "false", "null", "this" });
-    }
-
     // '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '='
     fn tryEatOp(self: *Compiler) ?u8 {
-        var isOp = self.peekTokenType(.symbol) and (self.peekTokenList(&.{ "+", "-", "*", "/", "&", "|", "<", ">", "=" }));
-        if (isOp) {
+        if (self.peekTokenType(.symbol) and self.peekTokenList(&.{ "+", "-", "*", "/", "&", "|", "<", ">", "=" })) {
             var currentValue = self.currentToken.value;
             self.nextToken();
             return currentValue[0];
@@ -408,11 +387,11 @@ pub const Compiler = struct {
 
     // If the token exists, return true and eat it, else return false
     fn tryEatToken(self: *Compiler, tokenType: TokenType, value: []const u8) bool {
-        var isValid = self.peekToken(tokenType, value);
-        if (isValid) {
+        if (self.peekToken(tokenType, value)) {
             self.nextToken();
+            return true;
         }
-        return isValid;
+        return false;
     }
 
     // Check information about the current token
@@ -449,37 +428,23 @@ pub const Compiler = struct {
         }
         self.nextToken();
     }
-    fn eatType(self: *Compiler, tokenType: TokenType) void {
+    fn eatType(self: *Compiler, tokenType: TokenType) []const u8 {
         if (!self.peekTokenType(tokenType)) {
             std.debug.panic("Expected token of type {s} but got {s}\n", .{ tokenType, self.currentToken.type });
         }
+        var out = self.currentToken.value;
         self.nextToken();
+        return out;
     }
 
     fn nextToken(self: *Compiler) void {
-        self.currentToken = self.tokens.next() orelse return;
-    }
-
-    // Used to test the tokenizer
-    fn printTokens(self: *Compiler) void {
-        self.writeTag("tokens");
-        defer self.writeTagEnd("tokens");
-        while (!self.tokens.is_eof()) {
-            self.nextToken();
-        }
+        self.currentToken = self.tokens.next() orelse std.debug.panic("Unexpected end of file", .{});
     }
 
     fn popScope(self: *Compiler) void {
         self.scope.clear();
     }
 
-    fn printScopes(self: *Compiler) void {
-        for (self.scope.symbol_list) |symbol_type, i| {
-            for (symbol_type.items) |symbol, j| {
-                std.log.info("Scope {} {s} {s} {}\n", .{ @intToEnum(scope.Kinds, i), symbol.name, symbol.type, j });
-            }
-        }
-    }
     fn getLabel(self: *Compiler) u32 {
         self.label_counter += 1;
         return self.label_counter - 1;

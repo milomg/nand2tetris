@@ -30,9 +30,8 @@ const SymbolReturn = struct {
     kind: Kinds,
 };
 
-// I decided to do an ArrayList because that is much faster for small numbers of variables.
 pub const Scope = struct {
-    // We don't even need to store a parent
+    // We don't need to store a parent
     symbol_list: [kindsLen]SymbolList,
     pub fn init(allocator: std.mem.Allocator) Scope {
         var list: [kindsLen]SymbolList = undefined;

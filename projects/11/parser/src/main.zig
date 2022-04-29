@@ -26,10 +26,9 @@ fn run_file(folder: std.fs.Dir, fileName: []const u8) !void {
 
     // Build the tokenizer, and pass that structure to the parser
     var tokens = Tokenizer{ .contents = contents, .index = 0 };
-    // We start with the currentToken being non-null
     var myParser = try Parser.init(&tokens, output.writer(), allocator);
     defer myParser.deinit();
-    // If you want to tokenize, just do myParser.printTokens();
+
     myParser.compileClass();
 }
 

@@ -7,8 +7,11 @@
 
 ## Running the whole folder
 
-zig build run -- ../ArrayTest/
-zig build run -- ../ExpressionLessSquare/
+zig build run -- ../Average/
+zig build run -- ../ComplexArrays/
+zig build run -- ../ConvertToBin/
+zig build run -- ../Pong/
+zig build run -- ../Seven/
 zig build run -- ../Square/
 
 sdiff -s -b ../ArrayTest/Main.xml ../ArrayTest/MainMine.xml
