@@ -43,6 +43,12 @@ pub const Scope = struct {
             .symbol_list = list,
         };
     }
+    // Deinit will deallocate all the ArrayLists
+    pub fn deinit(self: *Scope) void {
+        for (self.symbol_list) |list| {
+            list.deinit();
+        }
+    }
     pub fn add(self: *Scope, kind: Kinds, stype: []const u8, name: []const u8) void {
         var symbol = Symbol{
             .type = stype,
@@ -50,14 +56,10 @@ pub const Scope = struct {
         };
         self.symbol_list[@enumToInt(kind)].append(symbol) catch return;
     }
+    // When we exit a method we need to clear the locals and arguments
     pub fn clear(self: *Scope) void {
         self.symbol_list[@enumToInt(Kinds.local)].clearRetainingCapacity();
         self.symbol_list[@enumToInt(Kinds.argument)].clearRetainingCapacity();
-    }
-    pub fn deinit(self: *Scope) void {
-        for (self.symbol_list) |list| {
-            list.deinit();
-        }
     }
     pub fn lookup(self: *Scope, name: []const u8) ?SymbolReturn {
         for (self.symbol_list) |list, i| {
@@ -69,7 +71,12 @@ pub const Scope = struct {
         }
         return null;
     }
+    // We parse the classVarDecs (fields), then we just need to count the number of them
     pub fn classVarCount(self: Scope) u32 {
         return @truncate(u32, self.symbol_list[@enumToInt(Kinds.field)].items.len);
+    }
+    // We parse the varDecs, then we just need to count the number of them
+    pub fn varCount(self: Scope) u32 {
+        return @truncate(u32, self.symbol_list[@enumToInt(Kinds.local)].items.len);
     }
 };

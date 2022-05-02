@@ -66,7 +66,7 @@ pub const Compiler = struct {
 
     // ('constructor' | 'function' | 'method') ('void' | type) subroutineName '('parameterList ')' subroutineBody
     fn compileSubroutineDec(self: *Compiler) void {
-        defer self.popScope();
+        defer self.scope.clear();
 
         var isMethod = self.peekToken(.keyword, "method");
         var isConstructor = self.peekToken(.keyword, "constructor");
@@ -81,17 +81,18 @@ pub const Compiler = struct {
         self.eat(.symbol, ")");
 
         self.eat(.symbol, "{");
-        var i: u32 = 0;
         while (self.peekToken(.keyword, "var")) {
-            i += self.compileVarDec();
+            self.compileVarDec();
         }
 
-        self.writer.print("function {s}.{s} {}\n", .{ self.class, fname, i }) catch return;
+        self.writer.print("function {s}.{s} {}\n", .{ self.class, fname, self.scope.varCount() }) catch return;
 
         if (isMethod) {
+            // At the start of a method, we set *pointer to the first parameter from the arguments (sets the variable "this" from the value passed in)
             self.writer.print("push argument 0\n", .{}) catch return;
             self.writer.print("pop pointer 0\n", .{}) catch return;
         } else if (isConstructor) {
+            // At the start of a constructor, we allocate space for the fields and sets this to the address of the allocated space
             self.writer.print("push constant {}\n", .{self.scope.classVarCount()}) catch return;
             self.writer.print("call Memory.alloc 1\n", .{}) catch return;
             self.writer.print("pop pointer 0\n", .{}) catch return;
@@ -124,8 +125,7 @@ pub const Compiler = struct {
     }
 
     // 'var' type varName (',' varName)* ';
-    fn compileVarDec(self: *Compiler) u32 {
-        var count: u32 = 1;
+    fn compileVarDec(self: *Compiler) void {
         self.eat(.keyword, "var");
         var symbolType = self.currentToken.value;
         self.nextToken(); // type
@@ -134,10 +134,8 @@ pub const Compiler = struct {
         while (self.tryEatToken(.symbol, ",")) {
             symbolName = self.eatType(.identifier); // varName
             self.scope.add(.local, symbolType, symbolName);
-            count += 1;
         }
         self.eat(.symbol, ";");
-        return count;
     }
 
     // letStatement | ifStatement | whileStatement | doStatement | returnStatement
@@ -169,9 +167,13 @@ pub const Compiler = struct {
             self.eat(.symbol, "]");
             self.eat(.symbol, "=");
             self.compileExpression();
+            // We store the value to assign in tmp
             self.writer.print("pop temp 0\n", .{}) catch return;
+            // We get the pointer to where we should assign things
             self.writer.print("pop pointer 1\n", .{}) catch return;
+            // Put the return value of the expression (currently stored in tmp) back on the stack
             self.writer.print("push temp 0\n", .{}) catch return;
+            // Pop the top value of the stack into the pointer
             self.writer.print("pop that 0\n", .{}) catch return;
         } else {
             self.eat(.symbol, "=");
@@ -242,22 +244,22 @@ pub const Compiler = struct {
         var name = self.eatType(.identifier); // subroutineName
         if (self.tryEatToken(.symbol, "(")) {
             self.writer.print("push pointer 0\n", .{}) catch return;
-            var numberOfExpressions = self.compileExpressionList();
+            var numberOfArguments = self.compileExpressionList();
             self.eat(.symbol, ")");
-            self.writer.print("call {s}.{s} {}", .{ self.class, name, numberOfExpressions + 1 }) catch return;
+            self.writer.print("call {s}.{s} {}", .{ self.class, name, numberOfArguments + 1 }) catch return;
         } else if (self.tryEatToken(.symbol, ".")) {
             var subroutineName = self.eatType(.identifier); // subroutineName
             self.eat(.symbol, "(");
-            var numberOfExpressions: u32 = 0;
+            var numberOfArguments: u32 = 0;
             if (self.scope.lookup(name)) |symbol| {
                 self.writer.print("push {s} {}\n", .{ symbol.kind.toString(), symbol.index }) catch return;
-                numberOfExpressions += 1;
+                numberOfArguments += 1;
                 name = symbol.symbol.type;
             }
-            numberOfExpressions += self.compileExpressionList();
+            numberOfArguments += self.compileExpressionList();
             self.eat(.symbol, ")");
 
-            self.writer.print("call {s}.{s} {}", .{ name, subroutineName, numberOfExpressions }) catch return;
+            self.writer.print("call {s}.{s} {}", .{ name, subroutineName, numberOfArguments }) catch return;
         }
         self.writer.print("\n", .{}) catch return;
     }
@@ -338,19 +340,21 @@ pub const Compiler = struct {
             } else if (self.tryEatToken(.symbol, ".")) {
                 var subName = self.eatType(.identifier);
                 self.eat(.symbol, "(");
-                var numberOfExpressions = self.compileExpressionList();
+                var numberOfArguments = self.compileExpressionList();
                 self.eat(.symbol, ")");
+                // If we are calling a method on an object, we need to push the object as the first argument (the "this" argument)
+                // if we push a this argument, we have on extra argument
                 if (self.scope.lookup(name)) |symbol| {
                     self.writer.print("push {s} {}\n", .{ symbol.kind.toString(), symbol.index }) catch return;
-                    numberOfExpressions += 1;
+                    numberOfArguments += 1;
                     name = symbol.symbol.type;
                 }
-                self.writer.print("call {s}.{s} {}\n", .{ name, subName, numberOfExpressions }) catch return;
+                self.writer.print("call {s}.{s} {}\n", .{ name, subName, numberOfArguments }) catch return;
             } else if (self.tryEatToken(.symbol, "(")) {
-                var numberOfExpressions = self.compileExpressionList();
+                var numberOfArguments = self.compileExpressionList();
                 self.eat(.symbol, ")");
                 self.writer.print("push pointer 0\n", .{}) catch return;
-                self.writer.print("call {s}.{s} {}\n", .{ self.class, name, numberOfExpressions + 1 }) catch return;
+                self.writer.print("call {s}.{s} {}\n", .{ self.class, name, numberOfArguments + 1 }) catch return;
             } else {
                 var x = self.scope.lookup(name) orelse std.debug.panic("Symbol `{s}` not found", .{name});
                 self.writer.print("push {s} {}\n", .{ x.kind.toString(), x.index }) catch return;
@@ -441,10 +445,7 @@ pub const Compiler = struct {
         self.currentToken = self.tokens.next() orelse std.debug.panic("Unexpected end of file", .{});
     }
 
-    fn popScope(self: *Compiler) void {
-        self.scope.clear();
-    }
-
+    // We have a label counter to return the next available label index
     fn getLabel(self: *Compiler) u32 {
         self.label_counter += 1;
         return self.label_counter - 1;
