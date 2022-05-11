@@ -8,13 +8,36 @@
  * Note: Jack compilers implement multiplication and division using OS method calls.
  */
 class Math {
+    static Array table;
 
     /** Initializes the library. */
     function void init() {
+        let table = Array.new(16);
+        let table[0] = 1;
+        let table[1] = 2;
+        let table[2] = 4;
+        let table[3] = 8;
+        let table[4] = 16;
+        let table[5] = 32;
+        let table[6] = 64;
+        let table[7] = 128;
+        let table[8] = 256;
+        let table[9] = 512;
+        let table[10] = 1024;
+        let table[11] = 2048;
+        let table[12] = 4096;
+        let table[13] = 8192;
+        let table[14] = 16384;
+        let table[15] = 16384 + 16384;
     }
 
     /** Returns the absolute value of x. */
     function int abs(int x) {
+        if (x < 0) {
+            return -x;
+        } else {
+            return x;
+        }
     }
 
     /** Returns the product of x and y. 
@@ -23,6 +46,15 @@ class Math {
      *  the Jack expressions x*y and multiply(x,y) return the same value.
      */
     function int multiply(int x, int y) {
+        var int sum, shiftedX, j;
+        while (j < 16) {
+            if (y & table[j] > 0) {
+                let sum = sum + shiftedX;
+            }
+            let shiftedX = shiftedX + shiftedX;
+            let j = j + 1;
+        }
+        return sum;
     }
 
     /** Returns the integer part of x/y.
@@ -31,17 +63,43 @@ class Math {
      *  the Jack expressions x/y and divide(x,y) return the same value.
      */
     function int divide(int x, int y) {
+        var int q;
+        if (y > x) {
+            return 0;
+        }
+        let q = Math.divide(x,2*y);
+        if ((x - (q * 2 * y)) < y) {
+            return (2 * q);
+        } else {
+            return (2 * q) + 1;
+        }
     }
 
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
+        var int y, j;
+        let y = 0;
+        let j = 7; // 16/2 - 1
+        while (~(j  < 0)) {
+            
+        }
     }
 
     /** Returns the greater number. */
     function int max(int a, int b) {
+        if (a > b) {
+            return a;
+        } else {
+            return b;
+        }
     }
 
     /** Returns the smaller number. */
     function int min(int a, int b) {
+        if (a < b) {
+            return a;
+        } else {
+            return b;
+        }
     }
 }
