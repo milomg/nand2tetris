@@ -42,7 +42,7 @@ pub const Compiler = struct {
             self.compileClassVarDec();
         }
         while (self.peekTokenList(&.{ "constructor", "function", "method" })) {
-            self.compileSubroutineDec();
+            self.compileSubroutine();
         }
         if (!self.peekToken(.symbol, "}")) {
             std.debug.panic("Expected token `}}` but got {s} with value {s}\n", .{ self.currentToken.type, self.currentToken.value });
@@ -64,8 +64,8 @@ pub const Compiler = struct {
         self.eat(.symbol, ";");
     }
 
-    // ('constructor' | 'function' | 'method') ('void' | type) subroutineName '('parameterList ')' subroutineBody
-    fn compileSubroutineDec(self: *Compiler) void {
+    // ('constructor' | 'function' | 'method') ('void' | type) subroutineName '('parameterList ')' '{' varDec* statements '}'
+    fn compileSubroutine(self: *Compiler) void {
         defer self.scope.clear();
 
         var isMethod = self.peekToken(.keyword, "method");
@@ -98,7 +98,8 @@ pub const Compiler = struct {
             self.writer.print("pop pointer 0\n", .{}) catch return;
         }
 
-        self.compileSubroutineBody();
+        self.compileStatements();
+        self.eat(.symbol, "}");
     }
 
     // ( (type varName) (',' type varName)*)?
@@ -116,12 +117,6 @@ pub const Compiler = struct {
             symbolName = self.eatType(.identifier); // varName
             self.scope.add(.argument, symbolType, symbolName);
         }
-    }
-
-    // '{' varDec* statements '}'
-    fn compileSubroutineBody(self: *Compiler) void {
-        self.compileStatements();
-        self.eat(.symbol, "}");
     }
 
     // 'var' type varName (',' varName)* ';
@@ -234,34 +229,36 @@ pub const Compiler = struct {
     // 'do' subroutineCall ';'
     fn compileDo(self: *Compiler) void {
         self.eat(.keyword, "do");
-        self.compileSubroutineCall();
+        var name = self.eatType(.identifier); // subroutineName
+        self.compileSubroutineCall(name);
         self.writer.print("pop temp 0\n", .{}) catch return;
         self.eat(.symbol, ";");
     }
 
     // subroutineName '(' expressionList ')' | ( className | varName) '.' subroutineName '(' expressionList ')'
-    fn compileSubroutineCall(self: *Compiler) void {
-        var name = self.eatType(.identifier); // subroutineName
+    fn compileSubroutineCall(self: *Compiler, name: []const u8) void {
         if (self.tryEatToken(.symbol, "(")) {
             self.writer.print("push pointer 0\n", .{}) catch return;
             var numberOfArguments = self.compileExpressionList();
             self.eat(.symbol, ")");
-            self.writer.print("call {s}.{s} {}", .{ self.class, name, numberOfArguments + 1 }) catch return;
+            self.writer.print("call {s}.{s} {}\n", .{ self.class, name, numberOfArguments + 1 }) catch return;
         } else if (self.tryEatToken(.symbol, ".")) {
+            // If we are calling a method on an object, we need to push the object as the first argument (the "this" argument)
+            // if we push a this argument, we have on extra argument
             var subroutineName = self.eatType(.identifier); // subroutineName
             self.eat(.symbol, "(");
+            var className = name;
             var numberOfArguments: u32 = 0;
             if (self.scope.lookup(name)) |symbol| {
                 self.writer.print("push {s} {}\n", .{ symbol.kind.toString(), symbol.index }) catch return;
                 numberOfArguments += 1;
-                name = symbol.symbol.type;
+                className = symbol.symbol.type;
             }
             numberOfArguments += self.compileExpressionList();
             self.eat(.symbol, ")");
 
-            self.writer.print("call {s}.{s} {}", .{ name, subroutineName, numberOfArguments }) catch return;
+            self.writer.print("call {s}.{s} {}\n", .{ className, subroutineName, numberOfArguments }) catch return;
         }
-        self.writer.print("\n", .{}) catch return;
     }
 
     // 'return' expression? ';'
@@ -337,24 +334,8 @@ pub const Compiler = struct {
                 self.writer.print("add\n", .{}) catch return;
                 self.writer.print("pop pointer 1\n", .{}) catch return;
                 self.writer.print("push that 0\n", .{}) catch return;
-            } else if (self.tryEatToken(.symbol, ".")) {
-                var subName = self.eatType(.identifier);
-                self.eat(.symbol, "(");
-                var numberOfArguments = self.compileExpressionList();
-                self.eat(.symbol, ")");
-                // If we are calling a method on an object, we need to push the object as the first argument (the "this" argument)
-                // if we push a this argument, we have on extra argument
-                if (self.scope.lookup(name)) |symbol| {
-                    self.writer.print("push {s} {}\n", .{ symbol.kind.toString(), symbol.index }) catch return;
-                    numberOfArguments += 1;
-                    name = symbol.symbol.type;
-                }
-                self.writer.print("call {s}.{s} {}\n", .{ name, subName, numberOfArguments }) catch return;
-            } else if (self.tryEatToken(.symbol, "(")) {
-                var numberOfArguments = self.compileExpressionList();
-                self.eat(.symbol, ")");
-                self.writer.print("push pointer 0\n", .{}) catch return;
-                self.writer.print("call {s}.{s} {}\n", .{ self.class, name, numberOfArguments + 1 }) catch return;
+            } else if (self.peekToken(.symbol, ".") or self.peekToken(.symbol, "(")) {
+                self.compileSubroutineCall(name);
             } else {
                 var x = self.scope.lookup(name) orelse std.debug.panic("Symbol `{s}` not found", .{name});
                 self.writer.print("push {s} {}\n", .{ x.kind.toString(), x.index }) catch return;
