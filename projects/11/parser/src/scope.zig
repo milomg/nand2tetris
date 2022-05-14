@@ -61,6 +61,7 @@ pub const Scope = struct {
         self.symbol_list[@enumToInt(Kinds.local)].clearRetainingCapacity();
         self.symbol_list[@enumToInt(Kinds.argument)].clearRetainingCapacity();
     }
+    // When we want to find a symbol, we look through all of the symbols in each of the symbol types
     pub fn lookup(self: *Scope, name: []const u8) ?SymbolReturn {
         for (self.symbol_list) |list, i| {
             for (list.items) |symbol, j| {
