@@ -29,6 +29,11 @@ class Math {
         let table[13] = 8192;
         let table[14] = 16384;
         let table[15] = 16384 + 16384;
+        return;
+    }
+
+    function int pow2(int x) {
+        return table[x];
     }
 
     /** Returns the absolute value of x. */
@@ -45,10 +50,23 @@ class Math {
      *  program's code, it handles it by invoking this method. In other words,
      *  the Jack expressions x*y and multiply(x,y) return the same value.
      */
-    function int multiply(int x, int y) {
+     function int multiply(int x, int y) {
+        var int out;
+        let out = Math.posmul(Math.abs(x), Math.abs(y));
+        if ((x < 0) = (y < 0)) {
+            return out;
+        }
+        else {
+            return -out;
+        }
+    }
+    
+    function int posmul(int x, int y) {
         var int sum, shiftedX, j;
+        let sum = 0;
+        let shiftedX = x;
         while (j < 16) {
-            if (y & table[j] > 0) {
+            if (~((y & table[j]) = 0)) {
                 let sum = sum + shiftedX;
             }
             let shiftedX = shiftedX + shiftedX;
@@ -63,26 +81,46 @@ class Math {
      *  the Jack expressions x/y and divide(x,y) return the same value.
      */
     function int divide(int x, int y) {
-        var int q;
+        var int q, sum, negx, negy, out;
+            
+        let negy = y < 0;
+        let negx = x < 0;        
+        let x = Math.abs(x);
+        let y = Math.abs(y);
+
         if (y > x) {
             return 0;
         }
-        let q = Math.divide(x,2*y);
-        if ((x - (q * 2 * y)) < y) {
-            return (2 * q);
+
+        let q = Math.divide(x, y + y);
+        if ((x - ((q + q) * y)) < y) {
+            let out = q + q;
         } else {
-            return (2 * q) + 1;
+            let out = q + q + 1;
+        }
+
+        if (negx = negy) {
+            return out;
+        } else {
+            return -out;
         }
     }
 
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
         var int y, j;
+        var int ytmp, ytmp_squared;
         let y = 0;
         let j = 7; // 16/2 - 1
         while (~(j  < 0)) {
-            
+            let ytmp = y + table[j];
+            let ytmp_squared = ytmp * ytmp;
+            if (~(ytmp_squared > x) & (ytmp > 0)) {
+                let y = y + table[j];
+            }
+            let j = j - 1;
         }
+        return y;
     }
 
     /** Returns the greater number. */
