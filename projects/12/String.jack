@@ -53,6 +53,7 @@ class String {
         var int i;
         var Array new;
         if (length = maxLength) {
+            let i = 0;
             let new = Array.new(maxLength + maxLength);
             while (i < maxLength) {
                 let new[i] = stuff[i];

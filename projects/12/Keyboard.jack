@@ -10,6 +10,7 @@ class Keyboard {
 
     /** Initializes the keyboard. */
     function void init() {
+        return;
     } 
 
     /**
@@ -44,11 +45,11 @@ class Keyboard {
     function char readChar() {
         var int key, out;
         while (key = 0) {
-            let key = keyPressed();
+            let key = Keyboard.keyPressed();
         }
         let out = key;
-        while ((~key) = 0) {
-            let key = keyPressed();
+        while (~(key = 0)) {
+            let key = Keyboard.keyPressed();
         }
         return out;
     }
@@ -59,7 +60,31 @@ class Keyboard {
      * and returns its value. Also handles user backspaces.
      */
     function String readLine(String message) {
-        
+        var String out;
+        var char key;
+        let out = String.new(64);
+        do Output.printString(message);
+        do Output.printChar(0);
+        while (~(key = 128)) { // Newline
+            let key = Keyboard.readChar();
+            if (key = 129) { // Backspace
+                do out.eraseLastChar();
+                do Output.backSpace();
+                do Output.backSpace();
+                do Output.printChar(0);
+            } else {
+                if (key = 128) {
+                    do Output.backSpace();
+                    do Output.printChar(key);
+                } else {
+                    do out.appendChar(key);
+                    do Output.backSpace();
+                    do Output.printChar(key);
+                    do Output.printChar(0);
+                }
+            }
+        }
+        return out;
     }
 
     /**								
@@ -70,5 +95,31 @@ class Keyboard {
      */
     function int readInt(String message) {
         var String out;
+        var char key;
+        let out = String.new(64);
+        do Output.printString(message);
+        do Output.printChar(0);
+        while (~(key = 128)) { // Newline
+            let key = Keyboard.readChar();
+            if (key = 129) { // Backspace
+                do out.eraseLastChar();
+                do Output.backSpace();
+                do Output.backSpace();
+                do Output.printChar(0);
+            } else {
+                if (key = 128) {
+                    do Output.backSpace();
+                    do Output.printChar(key);
+                } else {
+                    if ((~(key < 48) & ~(key > 57)) | (key = 45)) {
+                        do out.appendChar(key);
+                        do Output.backSpace();
+                        do Output.printChar(key);
+                        do Output.printChar(0);
+                    }
+                }
+            }
+        }
+        return out.intValue();
     }
 }
