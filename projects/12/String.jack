@@ -28,7 +28,7 @@ class String {
 
     /** Disposes this string. */
     method void dispose() {
-        do Array.dispose(stuff);
+        do stuff.dispose();
         return;
     }
 
@@ -48,21 +48,31 @@ class String {
         return;
     }
 
+    /** Resizes the string to have a bit of extra room in addition to requestedLength. */
+    method void ensureCapacity(int requestedLength) {
+        var int i;
+        var Array new;
+        if (requestedLength > maxLength) {
+            while (maxLength < requestedLength) {
+                let maxLength = maxLength + maxLength / 2 + 2; // Zig uses maxLength / 2 + 8, but that seems excessive for Jack
+            }
+            let new = Array.new(maxLength);
+            let i = 0;
+            while (i < length) {
+                let new[i] = stuff[i];
+                let i = i + 1;
+            }
+            do stuff.dispose();
+            let stuff = new;
+        }
+        return;
+    }
+
     /** Appends c to this string's end and returns this string. */
     method String appendChar(char c) {
         var int i;
         var Array new;
-        if (length = maxLength) {
-            let i = 0;
-            let new = Array.new(maxLength + maxLength);
-            while (i < maxLength) {
-                let new[i] = stuff[i];
-                let i = i + 1;
-            }
-            do Array.dispose(stuff);
-            let stuff = new;
-            let maxLength = maxLength + maxLength;
-        }
+        do ensureCapacity(length + 1);
         let stuff[length] = c;
         let length = length + 1;
         return this;
@@ -91,7 +101,7 @@ class String {
         while (i < length) {
             if (~(stuff[i] < 48) & ~(stuff[i] > 57)) {
                 let result = (result * 10) + (stuff[i] - 48);
-            } 
+            }
             let i = i + 1;
         }
         if (neg) {
@@ -102,18 +112,38 @@ class String {
 
     /** Sets this string to hold a representation of the given value. */
     method void setInt(int val) {
+        var int pow10, i;
         var int num;
-        let length = 0;
-        if (val < 0) {
-            let val = -val;
-            do appendChar(45);      // leading '-'
+
+        let length = 1;
+
+        if (val = 0) {
+            let stuff[0] = 48;
+            return;
         }
 
+        if (val < 0) {
+            let val = -val;
+            let stuff[0] = 45;      // leading '-'
+            let length = 2;
+        }
+
+        let pow10 = 10;
+        while (~(pow10 > val) & (pow10 > 0)) {
+            let pow10 = pow10 * 10;
+            let length = length + 1;
+        }
+
+        do ensureCapacity(length);
+
+        let i = 1;
         while (val > 0) {
             let num = val;
             let val = val / 10;
-            do appendChar((num - (val * 10)) + 48);
+            let stuff[(length - i)] = (num - (val * 10)) + 48;
+            let i = i + 1;
         }
+
         return;
     }
 

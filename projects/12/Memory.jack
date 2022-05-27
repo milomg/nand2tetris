@@ -9,9 +9,9 @@
  * consists of 32,768 words, each holding a 16-bit binary number.
  */ 
 class Memory {
-
     static Array tmp;
     static int free;
+
     /** Initializes the class. */
     function void init() {
         let tmp = 0;
@@ -32,10 +32,8 @@ class Memory {
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
     function int alloc(int size) {
-        var int x; 
-        let x = free;
         let free = free + size;
-        return x;
+        return free - size;
     }
 
     /** De-allocates the given object (cast as an array) by making
