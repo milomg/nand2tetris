@@ -16,3 +16,5 @@ projects/09/**/*.vm
 projects/10/*/*Mine.xml
 projects/11/*/*.vm
 projects/12/*/*.vm
+projects/12/**/*.vm
+Verlet.asm

@@ -8,32 +8,33 @@
  * Note: Jack compilers implement multiplication and division using OS method calls.
  */
 class Math {
-    static Array table;
+    // This is a list of all powers of 2 (which are represented as 0b0000100000)
+    static Array bitArray;
 
     /** Initializes the library. */
     function void init() {
-        let table = Array.new(16);
-        let table[0] = 1;
-        let table[1] = 2;
-        let table[2] = 4;
-        let table[3] = 8;
-        let table[4] = 16;
-        let table[5] = 32;
-        let table[6] = 64;
-        let table[7] = 128;
-        let table[8] = 256;
-        let table[9] = 512;
-        let table[10] = 1024;
-        let table[11] = 2048;
-        let table[12] = 4096;
-        let table[13] = 8192;
-        let table[14] = 16384;
-        let table[15] = 16384 + 16384;
+        let bitArray = Array.new(16);
+        let bitArray[0] = 1;
+        let bitArray[1] = 2;
+        let bitArray[2] = 4;
+        let bitArray[3] = 8;
+        let bitArray[4] = 16;
+        let bitArray[5] = 32;
+        let bitArray[6] = 64;
+        let bitArray[7] = 128;
+        let bitArray[8] = 256;
+        let bitArray[9] = 512;
+        let bitArray[10] = 1024;
+        let bitArray[11] = 2048;
+        let bitArray[12] = 4096;
+        let bitArray[13] = 8192;
+        let bitArray[14] = 16384;
+        let bitArray[15] = 16384 + 16384;
         return;
     }
 
     function int pow2(int x) {
-        return table[x];
+        return bitArray[x];
     }
 
     /** Returns the absolute value of x. */
@@ -66,7 +67,7 @@ class Math {
         let sum = 0;
         let shiftedX = x;
         while (j < 16) {
-            if (~((y & table[j]) = 0)) {
+            if (~((y & bitArray[j]) = 0)) {
                 let sum = sum + shiftedX;
             }
             let shiftedX = shiftedX + shiftedX;
@@ -113,10 +114,10 @@ class Math {
         let y = 0;
         let j = 7; // 16/2 - 1
         while (~(j  < 0)) {
-            let ytmp = y + table[j];
+            let ytmp = y + bitArray[j];
             let ytmp_squared = ytmp * ytmp;
-            if (~(ytmp_squared > x) & (ytmp > 0)) {
-                let y = y + table[j];
+            if (~(ytmp_squared > x) & (ytmp_squared > 0)) {
+                let y = y + bitArray[j];
             }
             let j = j - 1;
         }

@@ -21,7 +21,7 @@ class Output {
     static int cursorX, cursorY;
     static in mask1, mask2;
     static Array screen;
-    static Array tmpChar;
+    static Array shiftedChar;
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
@@ -32,7 +32,7 @@ class Output {
         let mask2 = 32512;
         let mask2 = mask2 | (16384 + 16384);
 
-        let tmpChar = Array.new(11);
+        let shiftedChar = Array.new(11);
 
         do Output.initMap();
         return;
@@ -220,17 +220,17 @@ class Output {
         }
 
         let mychar = Output.getMap(c);
-        let tmpChar[0] = mychar[0] * mul;
-        let tmpChar[1] = mychar[1] * mul;
-        let tmpChar[2] = mychar[2] * mul;
-        let tmpChar[3] = mychar[3] * mul;
-        let tmpChar[4] = mychar[4] * mul;
-        let tmpChar[5] = mychar[5] * mul;
-        let tmpChar[6] = mychar[6] * mul;
-        let tmpChar[7] = mychar[7] * mul;
-        let tmpChar[8] = mychar[8] * mul;
-        let tmpChar[9] = mychar[9] * mul;
-        let tmpChar[10] = mychar[10] * mul;
+        let shiftedChar[0] = mychar[0] * mul;
+        let shiftedChar[1] = mychar[1] * mul;
+        let shiftedChar[2] = mychar[2] * mul;
+        let shiftedChar[3] = mychar[3] * mul;
+        let shiftedChar[4] = mychar[4] * mul;
+        let shiftedChar[5] = mychar[5] * mul;
+        let shiftedChar[6] = mychar[6] * mul;
+        let shiftedChar[7] = mychar[7] * mul;
+        let shiftedChar[8] = mychar[8] * mul;
+        let shiftedChar[9] = mychar[9] * mul;
+        let shiftedChar[10] = mychar[10] * mul;
 
         let y = cursorY * 352 + x;
         let endY = y + 352 + x; // 352 = 11*512/16
@@ -242,7 +242,7 @@ class Output {
             } else {
                 let screen[y] = screen[y] & mask1;
             }
-            let screen[y] = screen[y] | tmpChar[i];
+            let screen[y] = screen[y] | shiftedChar[i];
             let y = y + 32;
             let i = i + 1;
         }
