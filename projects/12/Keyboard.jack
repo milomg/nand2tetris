@@ -44,6 +44,7 @@ class Keyboard {
      */
     function char readChar() {
         var int key, out;
+        do Output.printChar(0);
         while (key = 0) {
             let key = Keyboard.keyPressed();
         }
@@ -51,6 +52,8 @@ class Keyboard {
         while (~(key = 0)) {
             let key = Keyboard.keyPressed();
         }
+        do Output.backSpace();
+        do Output.printChar(out);
         return out;
     }
 
@@ -64,23 +67,13 @@ class Keyboard {
         var char key;
         let out = String.new(64);
         do Output.printString(message);
-        do Output.printChar(0);
         while (~(key = 128)) { // Newline
             let key = Keyboard.readChar();
             if (key = 129) { // Backspace
-                do out.eraseLastChar();
-                do Output.backSpace();
-                do Output.backSpace();
-                do Output.printChar(0);
+                do out.eraseLastChar(); // Erase last character from string
             } else {
-                if (key = 128) {
-                    do Output.backSpace();
-                    do Output.printChar(key);
-                } else {
+                if (~(key = 128)) { // Newline
                     do out.appendChar(key);
-                    do Output.backSpace();
-                    do Output.printChar(key);
-                    do Output.printChar(0);
                 }
             }
         }
@@ -98,24 +91,16 @@ class Keyboard {
         var char key;
         let out = String.new(64);
         do Output.printString(message);
-        do Output.printChar(0);
         while (~(key = 128)) { // Newline
             let key = Keyboard.readChar();
             if (key = 129) { // Backspace
                 do out.eraseLastChar();
-                do Output.backSpace();
-                do Output.backSpace();
-                do Output.printChar(0);
             } else {
-                if (key = 128) {
-                    do Output.backSpace();
-                    do Output.printChar(key);
-                } else {
-                    if ((~(key < 48) & ~(key > 57)) | (key = 45)) {
+                if (~(key = 128)) { // don't add a newline to the string (but still print it)
+                    if ((~(key < 48) & ~(key > 57)) | ((key = 45) & (out.length() = 0))) {
                         do out.appendChar(key);
+                    } else {
                         do Output.backSpace();
-                        do Output.printChar(key);
-                        do Output.printChar(0);
                     }
                 }
             }

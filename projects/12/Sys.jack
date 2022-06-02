@@ -32,7 +32,9 @@ class Sys {
         let i = 0;
         while (i < duration) {
             let j = 0;
-            while (j < 50) {
+            // Loop in place duration number of times
+            // While testing this, I discovered that the speed of noanimation mode depends on the speed slider!
+            while (j < 50) { // decompiled Sys.vm to discover this number
                 let j = j + 1;
             }
             let i = i + 1;

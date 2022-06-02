@@ -47,25 +47,25 @@ class Memory {
             }
         }
 
+        // Find the first free segment that has at least the right size
+        // (but make sure not to run out of memory)
         while ((ram[i] < (size + 1)) & ~(ram[i + 1] = 0)) {
             let lasti = i;
             let i = ram[i + 1];
         }
 
+        // If the ram segment is too large, split it up
         if (ram[i] > (size + 1)) {
             let out = i + ram[i] - (size);
             let ram[out - 1] = (size + 1);
             let ram[i] = ram[i] - (size + 1);
             return out;
         } else {
+            // If the ram segment is exactly the right size, use it (and adjust the list accordingly)
             if (lasti > 0) {
                 let ram[lasti + 1] = ram[i + 1];
                 return i + 1;
-            } else {
-                if (ram[i + 1] = 0) {
-                    do Sys.error(6);
-                    return 0;
-                }
+            } else { // If it is the first segment
                 let free = ram[i + 1];
                 return i + 1;
             }

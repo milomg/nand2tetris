@@ -33,6 +33,7 @@ class Math {
         return;
     }
 
+    /** Returns 2^x. */
     function int pow2(int x) {
         return bitArray[x];
     }

@@ -93,15 +93,14 @@ class String {
         let result = 0;
         if ((length > 0) & (stuff[0] = 45)) { // 45 = '-'
             let neg = true;
-            let i = 1;
+            let i = 1; // skip the first character
         } else {
             let neg = false;
             let i = 0;
         }
-        while (i < length) {
-            if (~(stuff[i] < 48) & ~(stuff[i] > 57)) {
-                let result = (result * 10) + (stuff[i] - 48);
-            }
+
+        while ((i < length) & ~(stuff[i] < 48) & ~(stuff[i] > 57)) {
+            let result = (result * 10) + (stuff[i] - 48);
             let i = i + 1;
         }
         if (neg) {
@@ -128,6 +127,7 @@ class String {
             let length = 2;
         }
 
+        // Precompute the length in base 10
         let pow10 = 10;
         while (~(pow10 > val) & (pow10 > 0)) {
             let pow10 = pow10 * 10;
@@ -136,11 +136,12 @@ class String {
 
         do ensureCapacity(length);
 
+        // Start from the length and work backwards to fill in the numbers
         let i = 1;
         while (val > 0) {
-            let num = val;
-            let val = val / 10;
-            let stuff[(length - i)] = (num - (val * 10)) + 48;
+            let num = val; // store the current number
+            let val = val / 10; // downshift
+            let stuff[(length - i)] = (num - (val * 10)) + 48; // 48 = '0', num - (val * 10) = num % 10
             let i = i + 1;
         }
 
