@@ -46,12 +46,12 @@ pub fn main() !void {
     if (isFile) {
         try run_file(std.fs.cwd(), fileOrFolder);
     } else {
-        var folder = try std.fs.cwd().openDir(fileOrFolder, .{});
+        var folder = try std.fs.cwd().openIterableDir(fileOrFolder, .{});
         defer folder.close();
         var iterator = folder.iterate();
         while (try iterator.next()) |entry| {
             if (std.mem.endsWith(u8, entry.name, ".jack")) {
-                try run_file(folder, entry.name);
+                try run_file(folder.dir, entry.name);
             }
         }
     }

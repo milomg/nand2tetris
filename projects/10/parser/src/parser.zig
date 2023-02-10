@@ -10,7 +10,7 @@ pub const Parser = struct {
     indentation: usize,
     writer: std.fs.File.Writer,
 
-    // 'class' className '{' classVarDec* subroutineDec* '}' 
+    // 'class' className '{' classVarDec* subroutineDec* '}'
     pub fn parseClass(self: *Parser) void {
         self.writeTag("class");
         defer self.writeTagEnd("class");
@@ -30,7 +30,7 @@ pub const Parser = struct {
     fn parseClassVarDec(self: *Parser) void {
         self.writeTag("classVarDec");
         defer self.writeTagEnd("classVarDec");
-        self.eatList(&.{"static", "field"});
+        self.eatList(&.{ "static", "field" });
         self.writeToken(); // type
         self.eatType(.identifier); // varName
         while (self.tryEatToken(.symbol, ",")) {
@@ -38,12 +38,12 @@ pub const Parser = struct {
         }
         self.eat(.symbol, ";");
     }
-    
+
     // ('constructor' | 'function' | 'method') ('void' | type) subroutineName '('parameterList ')' subroutineBody
     fn parseSubroutineDec(self: *Parser) void {
         self.writeTag("subroutineDec");
         defer self.writeTagEnd("subroutineDec");
-        self.eatList(&.{"constructor", "function", "method"});
+        self.eatList(&.{ "constructor", "function", "method" });
         self.writeToken(); // type
         self.eatType(.identifier); // subroutineName
         self.eat(.symbol, "(");
@@ -52,7 +52,7 @@ pub const Parser = struct {
         self.parseSubroutineBody();
     }
 
-    // ( (type varName) (',' type varName)*)? 
+    // ( (type varName) (',' type varName)*)?
     fn parseParameterList(self: *Parser) void {
         self.writeTag("parameterList");
         defer self.writeTagEnd("parameterList");
@@ -67,7 +67,7 @@ pub const Parser = struct {
         }
     }
 
-    // '{' varDec* statements '}' 
+    // '{' varDec* statements '}'
     fn parseSubroutineBody(self: *Parser) void {
         self.writeTag("subroutineBody");
         defer self.writeTagEnd("subroutineBody");
@@ -111,7 +111,7 @@ pub const Parser = struct {
         }
     }
 
-    // 'let' varName ('[' expression ']')? '=' expression ';' 
+    // 'let' varName ('[' expression ']')? '=' expression ';'
     fn parseLet(self: *Parser) void {
         self.writeTag("letStatement");
         defer self.writeTagEnd("letStatement");
@@ -144,7 +144,7 @@ pub const Parser = struct {
         }
     }
 
-    // 'while' '(' expression ')' '{' statements '}' 
+    // 'while' '(' expression ')' '{' statements '}'
     fn parseWhile(self: *Parser) void {
         self.writeTag("whileStatement");
         defer self.writeTagEnd("whileStatement");
@@ -200,7 +200,7 @@ pub const Parser = struct {
             self.parseTerm();
         }
     }
-    
+
     // integerConstant | stringConstant | keywordConstant | varName | varName '[' expression ']' | subroutineCall | '(' expression ')' | unaryOp term
     fn parseTerm(self: *Parser) void {
         self.writeTag("term");
@@ -247,10 +247,10 @@ pub const Parser = struct {
 
     // 'true' | 'false' | 'null' | 'this'
     fn peekKeywordConstant(self: *Parser) bool {
-        return self.peekTokenType(.keyword) and self.peekTokenList(&.{"true", "false", "null", "this"});
+        return self.peekTokenType(.keyword) and self.peekTokenList(&.{ "true", "false", "null", "this" });
     }
 
-    // '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '=' 
+    // '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '='
     fn tryEatOp(self: *Parser) bool {
         var isOp = self.peekTokenType(.symbol) and (self.peekTokenList(&.{ "+", "-", "*", "/", "&", "|", "<", ">", "=" }));
         if (isOp) {
@@ -298,19 +298,19 @@ pub const Parser = struct {
     }
     fn eat(self: *Parser, tokenType: TokenType, value: []const u8) void {
         if (!self.peekToken(tokenType, value)) {
-            std.debug.panic("Expected token of type {s} with value {s} but got {s} with value {s}\n", .{ tokenType, value, self.currentToken.type, self.currentToken.value });
+            std.debug.panic("Expected token of type {s} with value {s} but got {s} with value {s}\n", .{ tokenType.toString(), value, self.currentToken.type.toString(), self.currentToken.value });
         }
         self.writeToken();
     }
     fn eatType(self: *Parser, tokenType: TokenType) void {
         if (!self.peekTokenType(tokenType)) {
-            std.debug.panic("Expected token of type {s} but got {s}\n", .{ tokenType, self.currentToken.type });
+            std.debug.panic("Expected token of type {s} but got {s}\n", .{ tokenType.toString(), self.currentToken.type.toString() });
         }
         self.writeToken();
     }
 
     // Zig has this "awesome" feature that allocations are explicit, which makes all string handling painful
-    // However, writing to a file in chunks is still pretty easy, so I implement a mini tokenizer that splits on 
+    // However, writing to a file in chunks is still pretty easy, so I implement a mini tokenizer that splits on
     // things to escape in XML. Internally, the self.writer.print will compile into this
     fn write_xml(self: *Parser) !void {
         var token = self.currentToken;
@@ -344,7 +344,7 @@ pub const Parser = struct {
                     try self.writer.writeAll("&quot;");
                     trailing = i + 1;
                 },
-                else => {}
+                else => {},
             }
         }
         try self.writer.writeAll(token.value[trailing..]);

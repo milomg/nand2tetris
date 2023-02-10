@@ -45,7 +45,7 @@ pub const Compiler = struct {
             self.compileSubroutine();
         }
         if (!self.peekToken(.symbol, "}")) {
-            std.debug.panic("Expected token `}}` but got {s} with value {s}\n", .{ self.currentToken.type, self.currentToken.value });
+            std.debug.panic("Expected token `}}` but got {s} with value {s}\n", .{ self.currentToken.type.toString(), self.currentToken.value });
         }
     }
 
@@ -409,13 +409,13 @@ pub const Compiler = struct {
     }
     fn eat(self: *Compiler, tokenType: TokenType, value: []const u8) void {
         if (!self.peekToken(tokenType, value)) {
-            std.debug.panic("Expected token of type {s} with value {s} but got {s} with value {s}\n", .{ tokenType, value, self.currentToken.type, self.currentToken.value });
+            std.debug.panic("Expected token of type {s} with value {s} but got {s} with value {s}\n", .{ tokenType.toString(), value, self.currentToken.type.toString(), self.currentToken.value });
         }
         self.nextToken();
     }
     fn eatType(self: *Compiler, tokenType: TokenType) []const u8 {
         if (!self.peekTokenType(tokenType)) {
-            std.debug.panic("Expected token of type {s} but got {s}\n", .{ tokenType, self.currentToken.type });
+            std.debug.panic("Expected token of type {s} but got {s}\n", .{ tokenType.toString(), self.currentToken.type.toString() });
         }
         var out = self.currentToken.value;
         self.nextToken();
