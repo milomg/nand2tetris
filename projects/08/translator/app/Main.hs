@@ -116,18 +116,18 @@ pop _ t offset = error (unpack $ "pop " ++ t ++ " " ++ offset ++ " not implement
 labelT :: Text -> State MyState Text
 labelT name = do
   state <- get
-  return $ "(" ++ (functionName state) ++ "$" ++ name ++ ")"
+  return $ "(" ++ functionName state ++ "$" ++ name ++ ")"
 
 -- Get the function name from the state and then jump to that label
 gotoT :: Text -> State MyState Text
 gotoT name = do
   state <- get
-  return $ "@" ++ (functionName state) ++ "$" ++ name ++ "\n0;JMP"
+  return $ "@" ++ functionName state ++ "$" ++ name ++ "\n0;JMP"
 
 ifgoto :: Text -> State MyState Text
 ifgoto name = do
   state <- get
-  return $ "@SP\nAM=M-1\nD=M\n@" ++ (functionName state) ++ "$" ++ name ++ "\nD;JNE"
+  return $ "@SP\nAM=M-1\nD=M\n@" ++ functionName state ++ "$" ++ name ++ "\nD;JNE"
 
 parseArgs :: Text -> Int
 parseArgs args =
@@ -139,7 +139,7 @@ functionT :: Text -> Text -> State MyState Text
 functionT name n = do
   state <- get
   put state {functionName = name}
-  return $ intercalate "\n" $ ("(" ++ name ++ ")") : (replicate (parseArgs n) ("@SP\nM=M+1\nA=M-1\nM=0"))
+  return $ intercalate "\n" $ ("(" ++ name ++ ")") : replicate (parseArgs n) "@SP\nM=M+1\nA=M-1\nM=0"
 
 stackLocals :: [Text]
 stackLocals = ["@LCL", "@ARG", "@THIS", "@THAT"]
@@ -191,7 +191,7 @@ processItem _ a = error (unpack $ "Unknown command: " ++ unwords a)
 
 -- Strip comments and empty lines
 trimLine :: Text -> Text
-trimLine = (strip . T.takeWhile (/= '/'))
+trimLine = strip . T.takeWhile (/= '/')
 
 -- This is the majority of the work on each file, takes a filename and returns the assembly code with some monads for reading io and state
 --
@@ -204,7 +204,7 @@ runFile file = do
   contents <- readFile file
   let parsed = lines contents
   let mapper = processItem (pack $ takeBaseName file) -- We pass in the filename to process item only once because of the ✨magic of currying✨ (this returns a function that takes the remaining arguments of processItem and runs it on them)
-  let magic = \x -> do
+  let magic x = do
         -- Create a variation of the mapper function that also adds a comment with the initial command
         out <- mapper (words $ trimLine x)
         return $ "//" ++ x ++ "\n" ++ out
@@ -222,7 +222,7 @@ main = do
         if isFolder
           then
             let (callSysInit, incCounter) = runState (callT "Sys.init" "0") zeroState -- Returns assembly commands to call sys.init and an updated copy of the initial state
-             in ("// Bootstrap code\n@256\nD=A\n@SP\nM=D\n" ++ (callSysInit) ++ "\n", incCounter)
+             in ("// Bootstrap code\n@256\nD=A\n@SP\nM=D\n" ++ callSysInit ++ "\n", incCounter)
           else ("", zeroState) -- If we're not a folder, the bootstrap is empty and the initial state still starts at counter=0
   files <-
     if isFolder
@@ -236,11 +236,11 @@ main = do
 
   -- I think the way monads and mapM works is we build a list of functions that take a state and return an updated copy of that state and a return value
   -- and then we start with an initial state and just feed one function into the next
-  let mapped = evalState (mapM id files) firstState
+  let mapped = evalState (sequence files) firstState
   let output = bootstrap ++ unlines (Data.List.concat mapped) -- Combine our bootstrap (empty if we run translate on a file), with the rest of the lines
   let outfile =
         if isFolder
           then fileName </> addExtension (takeFileName (dropTrailingPathSeparator fileName)) "asm"
-          else (replaceExtension fileName "asm")
+          else replaceExtension fileName "asm"
 
   writeFile outfile output
