@@ -14,17 +14,17 @@ A text rendition of xkcd.com/1296 for your viewing pleasure.
 **
 
 -------|-------------comment-----------------|-----date-------
-*       created main loop & timing control	   14 hours ago
+*       created main loop & timing control     14 hours ago
 |
-*       enabled config file parsing	           9 hours ago
+*       enabled config file parsing            9 hours ago
 |
-*       misc bugfixes	                         5 hours ago
+*       misc bugfixes                          5 hours ago
 |
 *       code additions/edits                   4 hours ago
 |
-*       more code	                             4 hours ago
+*       more code                              4 hours ago
 |\
-| *     here have code	                       4 hours ago
+| *     here have code                         4 hours ago
 | |
 | *     aaaaaaaa                               3 hours ago
 |/

@@ -9,8 +9,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^20.4.8",
-    "jiti": "^1.19.1",
-    "typescript": "^5.1.6"
-  }
+    "@types/node": "^20.14.12",
+    "jiti": "^1.21.6",
+    "typescript": "^5.5.4"
+  },
+  "packageManager": "pnpm@9.6.0"
 }
