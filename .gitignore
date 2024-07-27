@@ -7,7 +7,7 @@ node_modules/
 target/
 pnpm-lock.yaml
 projects/06/**/*.hack
-zig-cache
+.zig-cache
 zig-out
 projects/07/**/*.asm
 projects/08/**/*.asm

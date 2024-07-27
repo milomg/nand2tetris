@@ -17,7 +17,7 @@ pub const Compiler = struct {
     label_counter: u32,
 
     pub fn init(tokens: *Tokenizer, writer: std.fs.File.Writer, allocator: std.mem.Allocator) !Compiler {
-        var firstToken = tokens.next().?;
+        const firstToken = tokens.next().?;
         return Compiler{
             .class = "",
             .currentToken = firstToken,
@@ -51,9 +51,9 @@ pub const Compiler = struct {
 
     // ('static' | 'field' ) type varName (',' varName)* ';'
     fn compileClassVarDec(self: *Compiler) void {
-        var x: scope.Kinds = if (self.peekToken(.keyword, "static")) .static else .field;
+        const x: scope.Kinds = if (self.peekToken(.keyword, "static")) .static else .field;
         self.eatList(&.{ "static", "field" });
-        var symbolType = self.currentToken.value;
+        const symbolType = self.currentToken.value;
         self.nextToken(); // type
         var symbolName = self.eatType(.identifier); // varName
         self.scope.add(x, symbolType, symbolName);
@@ -68,11 +68,11 @@ pub const Compiler = struct {
     fn compileSubroutine(self: *Compiler) void {
         defer self.scope.clear();
 
-        var isMethod = self.peekToken(.keyword, "method");
-        var isConstructor = self.peekToken(.keyword, "constructor");
+        const isMethod = self.peekToken(.keyword, "method");
+        const isConstructor = self.peekToken(.keyword, "constructor");
         self.eatList(&.{ "constructor", "function", "method" });
         self.nextToken(); // type
-        var fname = self.eatType(.identifier); // subroutineName
+        const fname = self.eatType(.identifier); // subroutineName
         self.eat(.symbol, "(");
         if (isMethod) {
             self.scope.add(.argument, self.class, "this");
@@ -122,7 +122,7 @@ pub const Compiler = struct {
     // 'var' type varName (',' varName)* ';
     fn compileVarDec(self: *Compiler) void {
         self.eat(.keyword, "var");
-        var symbolType = self.currentToken.value;
+        const symbolType = self.currentToken.value;
         self.nextToken(); // type
         var symbolName = self.eatType(.identifier); // varName
         self.scope.add(.local, symbolType, symbolName);
@@ -153,7 +153,7 @@ pub const Compiler = struct {
     // 'let' varName ('[' expression ']')? '=' expression ';'
     fn compileLet(self: *Compiler) void {
         self.eat(.keyword, "let");
-        var symbolName = self.eatType(.identifier); // varName
+        const symbolName = self.eatType(.identifier); // varName
         if (self.tryEatToken(.symbol, "[")) {
             var symbol = self.scope.lookup(symbolName) orelse std.debug.panic("Symbol `{s}` not found", .{symbolName});
             self.compileExpression();
@@ -185,8 +185,8 @@ pub const Compiler = struct {
         self.eat(.symbol, "(");
         self.compileExpression();
         self.eat(.symbol, ")");
-        var labelIfTrue = self.getLabel();
-        var labelIfFalse = self.getLabel();
+        const labelIfTrue = self.getLabel();
+        const labelIfFalse = self.getLabel();
 
         self.print("if-goto L{}", .{labelIfTrue});
         self.print("goto L{}", .{labelIfFalse});
@@ -196,7 +196,7 @@ pub const Compiler = struct {
         self.eat(.symbol, "}");
 
         if (self.tryEatToken(.keyword, "else")) {
-            var labelIfEnd = self.getLabel();
+            const labelIfEnd = self.getLabel();
             self.print("goto L{}", .{labelIfEnd});
             self.print("label L{}", .{labelIfFalse});
             self.eat(.symbol, "{");
@@ -210,13 +210,13 @@ pub const Compiler = struct {
 
     // 'while' '(' expression ')' '{' statements '}'
     fn compileWhile(self: *Compiler) void {
-        var labelIndex = self.getLabel();
+        const labelIndex = self.getLabel();
         self.print("label L{}", .{labelIndex});
         self.eat(.keyword, "while");
         self.eat(.symbol, "(");
         self.compileExpression();
         self.print("not", .{});
-        var labelIndex2 = self.getLabel();
+        const labelIndex2 = self.getLabel();
         self.print("if-goto L{}", .{labelIndex2});
         self.eat(.symbol, ")");
         self.eat(.symbol, "{");
@@ -229,7 +229,7 @@ pub const Compiler = struct {
     // 'do' subroutineCall ';'
     fn compileDo(self: *Compiler) void {
         self.eat(.keyword, "do");
-        var name = self.eatType(.identifier); // subroutineName
+        const name = self.eatType(.identifier); // subroutineName
         self.compileSubroutineCall(name);
         self.print("pop temp 0", .{});
         self.eat(.symbol, ";");
@@ -239,13 +239,13 @@ pub const Compiler = struct {
     fn compileSubroutineCall(self: *Compiler, name: []const u8) void {
         if (self.tryEatToken(.symbol, "(")) {
             self.print("push pointer 0", .{});
-            var numberOfArguments = self.compileExpressionList();
+            const numberOfArguments = self.compileExpressionList();
             self.eat(.symbol, ")");
             self.print("call {s}.{s} {}", .{ self.class, name, numberOfArguments + 1 });
         } else if (self.tryEatToken(.symbol, ".")) {
             // If we are calling a method on an object, we need to push the object as the first argument (the "this" argument)
             // if we push a this argument, we have on extra argument
-            var subroutineName = self.eatType(.identifier); // subroutineName
+            const subroutineName = self.eatType(.identifier); // subroutineName
             self.eat(.symbol, "(");
             var className = name;
             var numberOfArguments: u32 = 0;
@@ -325,7 +325,7 @@ pub const Compiler = struct {
         } else if (self.tryEatToken(.keyword, "this")) {
             self.print("push pointer 0", .{});
         } else if (self.peekTokenType(.identifier)) {
-            var name = self.eatType(.identifier);
+            const name = self.eatType(.identifier);
             if (self.tryEatToken(.symbol, "[")) {
                 var x = self.scope.lookup(name) orelse return;
                 self.print("push {s} {}", .{ x.kind.toString(), x.index });
@@ -362,7 +362,7 @@ pub const Compiler = struct {
     // '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '='
     fn tryEatOp(self: *Compiler) ?u8 {
         if (self.peekTokenType(.symbol) and self.peekTokenList(&.{ "+", "-", "*", "/", "&", "|", "<", ">", "=" })) {
-            var currentValue = self.currentToken.value;
+            const currentValue = self.currentToken.value;
             self.nextToken();
             return currentValue[0];
         } else {
@@ -417,7 +417,7 @@ pub const Compiler = struct {
         if (!self.peekTokenType(tokenType)) {
             std.debug.panic("Expected token of type {s} but got {s}\n", .{ tokenType.toString(), self.currentToken.type.toString() });
         }
-        var out = self.currentToken.value;
+        const out = self.currentToken.value;
         self.nextToken();
         return out;
     }

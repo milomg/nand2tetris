@@ -46,7 +46,7 @@ pub const Tokenizer = struct {
         var state: State = .start;
 
         while (self.index < self.contents.len) : (self.index += 1) {
-            var c = self.contents[self.index];
+            const c = self.contents[self.index];
 
             switch (state) {
                 .start => switch (c) {
@@ -61,7 +61,7 @@ pub const Tokenizer = struct {
                     },
                     '\n', ' ', '\t' => {},
                     '{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '&', '|', '<', '>', '=', '~' => {
-                        var token = self.contents[self.index..(self.index + 1)];
+                        const token = self.contents[self.index..(self.index + 1)];
                         self.index += 1;
                         return Token{ .type = .symbol, .value = token };
                     },
@@ -94,7 +94,7 @@ pub const Tokenizer = struct {
                 .integerConstant => switch (c) {
                     '0'...'9' => {},
                     else => {
-                        var myToken = self.contents[tokenStart..self.index];
+                        const myToken = self.contents[tokenStart..self.index];
                         // u15 is exactly the size of Jack's integer constants, and if it overflows, throw a parser error
                         _ = std.fmt.parseInt(u15, myToken, 10) catch {
                             std.debug.panic("Integer constant out of range: {s}", .{myToken});
@@ -104,7 +104,7 @@ pub const Tokenizer = struct {
                 },
                 .stringConstant => switch (c) {
                     '"' => {
-                        var myToken = self.contents[tokenStart..self.index];
+                        const myToken = self.contents[tokenStart..self.index];
                         self.index += 1;
                         return Token{ .type = .stringConstant, .value = myToken };
                     },
@@ -113,7 +113,7 @@ pub const Tokenizer = struct {
                 .identifier => switch (c) {
                     'a'...'z', 'A'...'Z', '0'...'9', '_' => {},
                     else => {
-                        var myToken = self.contents[tokenStart..self.index];
+                        const myToken = self.contents[tokenStart..self.index];
                         for (keywords) |keyword| {
                             if (std.mem.eql(u8, keyword, myToken)) {
                                 return Token{ .type = .keyword, .value = myToken };

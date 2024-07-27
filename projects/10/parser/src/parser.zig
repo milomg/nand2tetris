@@ -252,7 +252,7 @@ pub const Parser = struct {
 
     // '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '='
     fn tryEatOp(self: *Parser) bool {
-        var isOp = self.peekTokenType(.symbol) and (self.peekTokenList(&.{ "+", "-", "*", "/", "&", "|", "<", ">", "=" }));
+        const isOp = self.peekTokenType(.symbol) and (self.peekTokenList(&.{ "+", "-", "*", "/", "&", "|", "<", ">", "=" }));
         if (isOp) {
             self.writeToken();
         }
@@ -261,7 +261,7 @@ pub const Parser = struct {
 
     // If the token exists, return true and eat it, else return false
     fn tryEatToken(self: *Parser, tokenType: TokenType, value: []const u8) bool {
-        var isValid = self.peekToken(tokenType, value);
+        const isValid = self.peekToken(tokenType, value);
         if (isValid) {
             self.writeToken();
         }
@@ -314,7 +314,7 @@ pub const Parser = struct {
     // things to escape in XML. Internally, the self.writer.print will compile into this
     fn write_xml(self: *Parser) !void {
         var token = self.currentToken;
-        var tokenType = token.type.toString();
+        const tokenType = token.type.toString();
         try self.writer.writeAll("<");
         try self.writer.writeAll(tokenType);
         try self.writer.writeAll("> ");
@@ -381,8 +381,8 @@ pub const Parser = struct {
 
 // zig build test
 test "Parser.tryEatOp" {
-    var tokens = Tokenizer{ .contents = "", .index = 0 };
-    var token = Token{ .type = .symbol, .value = "+" };
+    const tokens = Tokenizer{ .contents = "", .index = 0 };
+    const token = Token{ .type = .symbol, .value = "+" };
     // Neat fact, you can pass in a stdout writer instead of a file writer (also there is something called an arraylist writer)
     var x = Parser{ .tokens = tokens, .currentToken = token, .indentation = 0, .writer = std.io.getStdErr().writer() };
     try std.testing.expect(x.tryEatOp());

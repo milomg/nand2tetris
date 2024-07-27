@@ -14,14 +14,14 @@ var allocator = gpa.allocator();
 fn run_file(folder: std.fs.Dir, fileName: []const u8) !void {
     const file = try folder.openFile(fileName, .{});
     defer file.close();
-    var contents = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
+    const contents = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
     defer allocator.free(contents);
 
     // Create a file with "Mine.xml" appended to the name (and .jack stripped).
     var outFile = try allocator.alloc(u8, fileName.len - 2);
     defer allocator.free(outFile);
-    std.mem.copy(u8, outFile, fileName[0 .. fileName.len - 2]);
-    std.mem.copy(u8, outFile[(fileName.len - 5) .. fileName.len - 2], ".vm");
+    std.mem.copyForwards(u8, outFile, fileName[0 .. fileName.len - 2]);
+    std.mem.copyForwards(u8, outFile[(fileName.len - 5) .. fileName.len - 2], ".vm");
     var output = try folder.createFile(outFile, .{});
 
     // Build the tokenizer, and pass that structure to the parser
@@ -46,12 +46,12 @@ pub fn main() !void {
     if (isFile) {
         try run_file(std.fs.cwd(), fileOrFolder);
     } else {
-        var folder = try std.fs.cwd().openIterableDir(fileOrFolder, .{});
+        var folder = try std.fs.cwd().openDir(fileOrFolder, .{});
         defer folder.close();
         var iterator = folder.iterate();
         while (try iterator.next()) |entry| {
             if (std.mem.endsWith(u8, entry.name, ".jack")) {
-                try run_file(folder.dir, entry.name);
+                try run_file(folder, entry.name);
             }
         }
     }
