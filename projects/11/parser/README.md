@@ -1,7 +1,7 @@
 # Compiler Part 1
 
 1. install zig: `brew install zig`
-2. Check that `zig version` prints 0.13.0
+2. Check that `zig version` prints 0.14.0
 3. `zig build run -- ../Square/Main.jack`
 
 
